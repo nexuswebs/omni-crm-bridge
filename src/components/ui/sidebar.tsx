@@ -19,7 +19,7 @@ const sidebarVariants = cva(
   }
 )
 
-const SidebarProvider = React.createContext<{
+const SidebarContext = React.createContext<{
   collapsed: boolean
   setCollapsed: (collapsed: boolean) => void
 }>({
@@ -37,14 +37,14 @@ export function SidebarProvider({
   const [collapsed, setCollapsed] = React.useState(defaultCollapsed)
 
   return (
-    <SidebarProvider.Provider value={{ collapsed, setCollapsed }}>
+    <SidebarContext.Provider value={{ collapsed, setCollapsed }}>
       {children}
-    </SidebarProvider.Provider>
+    </SidebarContext.Provider>
   )
 }
 
 export function useSidebar() {
-  const context = React.useContext(SidebarProvider)
+  const context = React.useContext(SidebarContext)
   if (!context) {
     throw new Error("useSidebar must be used within a SidebarProvider")
   }
