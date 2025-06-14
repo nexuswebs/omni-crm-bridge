@@ -4,13 +4,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { Search, Plus, Play, Pause, Edit, Trash2, BarChart3 } from 'lucide-react';
+import { Search, Plus, Play, Pause, Edit, Trash2, BarChart3, FileText, Zap, Download } from 'lucide-react';
 import { WorkflowEditor } from '@/components/WorkflowEditor';
+import { WorkflowLogs } from '@/components/WorkflowLogs';
+import { WorkflowAnalytics } from '@/components/WorkflowAnalytics';
+import { N8nConnection } from '@/components/N8nConnection';
+import { WorkflowTemplates } from '@/components/WorkflowTemplates';
+import { useToast } from '@/hooks/use-toast';
 
 const Workflows = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [showEditor, setShowEditor] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showConnection, setShowConnection] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [editingWorkflow, setEditingWorkflow] = useState(null);
+  const [selectedWorkflow, setSelectedWorkflow] = useState(null);
 
   const [workflows, setWorkflows] = useState([
     {
@@ -78,6 +89,11 @@ const Workflows = () => {
     };
     setWorkflows([...workflows, newWorkflow]);
     setShowEditor(false);
+    
+    toast({
+      title: "Workflow criado!",
+      description: `${workflowData.name} foi criado com sucesso.`,
+    });
   };
 
   const handleUpdateWorkflow = (workflowData: any) => {
@@ -87,18 +103,89 @@ const Workflows = () => {
         : workflow
     ));
     setEditingWorkflow(null);
+    
+    toast({
+      title: "Workflow atualizado!",
+      description: "As alterações foram salvas com sucesso.",
+    });
   };
 
   const handleToggleWorkflow = (id: number) => {
+    const workflow = workflows.find(w => w.id === id);
+    const newStatus = workflow?.status === 'running' ? 'paused' : 'running';
+    
     setWorkflows(workflows.map(workflow => 
       workflow.id === id 
-        ? { ...workflow, status: workflow.status === 'running' ? 'paused' : 'running' }
+        ? { ...workflow, status: newStatus }
         : workflow
     ));
+    
+    toast({
+      title: newStatus === 'running' ? "Workflow ativado" : "Workflow pausado",
+      description: `${workflow?.name} foi ${newStatus === 'running' ? 'ativado' : 'pausado'}.`,
+    });
   };
 
   const handleDeleteWorkflow = (id: number) => {
+    const workflow = workflows.find(w => w.id === id);
     setWorkflows(workflows.filter(workflow => workflow.id !== id));
+    
+    toast({
+      title: "Workflow removido",
+      description: `${workflow?.name} foi removido com sucesso.`,
+    });
+  };
+
+  const handleExecuteWorkflow = (workflow: any) => {
+    toast({
+      title: "Executando workflow...",
+      description: `${workflow.name} está sendo executado manualmente.`,
+    });
+    
+    // Simular execução
+    setTimeout(() => {
+      setWorkflows(workflows.map(w => 
+        w.id === workflow.id 
+          ? { ...w, executions: w.executions + 1, lastRun: 'Agora' }
+          : w
+      ));
+      
+      toast({
+        title: "Execução concluída!",
+        description: `${workflow.name} foi executado com sucesso.`,
+      });
+    }, 2000);
+  };
+
+  const handleUseTemplate = (templateData: any) => {
+    handleCreateWorkflow(templateData);
+  };
+
+  const handleShowAnalytics = (workflow: any) => {
+    setSelectedWorkflow(workflow);
+    setShowAnalytics(true);
+  };
+
+  const handleExportWorkflow = (workflow: any) => {
+    const exportData = {
+      name: workflow.name,
+      description: workflow.description,
+      trigger: workflow.trigger,
+      actions: workflow.actions,
+      conditions: workflow.conditions
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${workflow.name.toLowerCase().replace(/\s+/g, '-')}.json`;
+    link.click();
+    
+    toast({
+      title: "Workflow exportado!",
+      description: `${workflow.name} foi exportado como JSON.`,
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -131,20 +218,37 @@ const Workflows = () => {
           <h1 className="text-3xl font-bold">Workflows n8n</h1>
           <p className="text-muted-foreground">Gerencie suas automações inteligentes</p>
         </div>
-        <Dialog open={showEditor} onOpenChange={setShowEditor}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-primary text-white">
-              <Plus className="w-4 h-4 mr-2" />
-              Criar Workflow
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <WorkflowEditor
-              onSubmit={handleCreateWorkflow}
-              onCancel={() => setShowEditor(false)}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Dialog open={showTemplates} onOpenChange={setShowTemplates}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Download className="w-4 h-4 mr-2" />
+                Templates
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+              <WorkflowTemplates
+                onUseTemplate={handleUseTemplate}
+                onClose={() => setShowTemplates(false)}
+              />
+            </DialogContent>
+          </Dialog>
+          
+          <Dialog open={showEditor} onOpenChange={setShowEditor}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-primary text-white">
+                <Plus className="w-4 h-4 mr-2" />
+                Criar Workflow
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+              <WorkflowEditor
+                onSubmit={handleCreateWorkflow}
+                onCancel={() => setShowEditor(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Search and Actions */}
@@ -160,8 +264,29 @@ const Workflows = () => {
                 className="pl-10"
               />
             </div>
-            <Button variant="outline">Conectar n8n</Button>
-            <Button variant="outline">Logs</Button>
+            <Dialog open={showConnection} onOpenChange={setShowConnection}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Zap className="w-4 h-4 mr-2" />
+                  Conectar n8n
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <N8nConnection onClose={() => setShowConnection(false)} />
+              </DialogContent>
+            </Dialog>
+            
+            <Dialog open={showLogs} onOpenChange={setShowLogs}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Logs
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                <WorkflowLogs onClose={() => setShowLogs(false)} />
+              </DialogContent>
+            </Dialog>
           </div>
         </CardContent>
       </Card>
@@ -243,18 +368,30 @@ const Workflows = () => {
                     size="sm"
                     variant="outline"
                     onClick={() => handleToggleWorkflow(workflow.id)}
+                    title={workflow.status === 'running' ? 'Pausar' : 'Ativar'}
                   >
                     {workflow.status === 'running' ? 
                       <Pause className="w-4 h-4" /> : 
                       <Play className="w-4 h-4" />
                     }
                   </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleExecuteWorkflow(workflow)}
+                    title="Executar agora"
+                  >
+                    <Zap className="w-4 h-4" />
+                  </Button>
+                  
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button 
                         size="sm" 
                         variant="outline"
                         onClick={() => setEditingWorkflow(workflow)}
+                        title="Editar"
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -267,14 +404,31 @@ const Workflows = () => {
                       />
                     </DialogContent>
                   </Dialog>
-                  <Button size="sm" variant="outline">
+                  
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleShowAnalytics(workflow)}
+                    title="Análises"
+                  >
                     <BarChart3 className="w-4 h-4" />
                   </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleExportWorkflow(workflow)}
+                    title="Exportar"
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
+                  
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => handleDeleteWorkflow(workflow.id)}
                     className="text-destructive hover:bg-destructive/10"
+                    title="Excluir"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -337,6 +491,21 @@ const Workflows = () => {
           </Card>
         ))}
       </div>
+
+      {/* Analytics Dialog */}
+      <Dialog open={showAnalytics} onOpenChange={setShowAnalytics}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          {selectedWorkflow && (
+            <WorkflowAnalytics
+              workflow={selectedWorkflow}
+              onClose={() => {
+                setShowAnalytics(false);
+                setSelectedWorkflow(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
