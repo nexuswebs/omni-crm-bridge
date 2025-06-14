@@ -1,15 +1,18 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Phone, User } from 'lucide-react';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Search, Plus, Phone, User, Edit, Trash2, MessageSquare } from 'lucide-react';
+import { CustomerForm } from '@/components/CustomerForm';
 
 const Customers = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState(null);
 
-  const customers = [
+  const [customers, setCustomers] = useState([
     {
       id: 1,
       name: 'João Silva',
@@ -19,7 +22,8 @@ const Customers = () => {
       lastInteraction: '2 horas atrás',
       source: 'WhatsApp',
       tags: ['VIP', 'Interessado'],
-      agent: 'IA Assistant'
+      agent: 'IA Assistant',
+      notes: 'Cliente muito interessado em nossos produtos premium.'
     },
     {
       id: 2,
@@ -43,7 +47,30 @@ const Customers = () => {
       tags: ['Cliente Recorrente'],
       agent: 'IA Assistant'
     }
-  ];
+  ]);
+
+  const handleCreateCustomer = (customerData: any) => {
+    const newCustomer = {
+      id: Date.now(),
+      ...customerData,
+      lastInteraction: 'Agora'
+    };
+    setCustomers([...customers, newCustomer]);
+    setShowForm(false);
+  };
+
+  const handleUpdateCustomer = (customerData: any) => {
+    setCustomers(customers.map(customer => 
+      customer.id === editingCustomer?.id 
+        ? { ...customer, ...customerData }
+        : customer
+    ));
+    setEditingCustomer(null);
+  };
+
+  const handleDeleteCustomer = (id: number) => {
+    setCustomers(customers.filter(customer => customer.id !== id));
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -76,10 +103,20 @@ const Customers = () => {
           <h1 className="text-3xl font-bold">Clientes</h1>
           <p className="text-muted-foreground">Gerencie seus contatos e relacionamentos</p>
         </div>
-        <Button className="bg-gradient-primary text-white">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Cliente
-        </Button>
+        <Dialog open={showForm} onOpenChange={setShowForm}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-primary text-white">
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Cliente
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl">
+            <CustomerForm
+              onSubmit={handleCreateCustomer}
+              onCancel={() => setShowForm(false)}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search and Filters */}
@@ -160,18 +197,18 @@ const Customers = () => {
         </Card>
       </div>
 
-      {/* Customer List */}
+      {/* Customer List with Actions */}
       <Card className="border-0 bg-card/50 backdrop-blur-sm">
         <CardHeader>
           <CardTitle>Lista de Clientes</CardTitle>
           <CardDescription>
-            {filteredCustomers.length} clientes encontrados
+            {customers.length} clientes encontrados
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {filteredCustomers.map((customer) => (
-              <div key={customer.id} className="p-4 rounded-lg border border-border bg-background/50 hover:bg-background/80 transition-colors cursor-pointer">
+            {customers.map((customer) => (
+              <div key={customer.id} className="p-4 rounded-lg border border-border bg-background/50 hover:bg-background/80 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold">
@@ -190,8 +227,8 @@ const Customers = () => {
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <div className="flex items-center gap-2 mb-1">
-                        <div className={`w-2 h-2 rounded-full ${getStatusColor(customer.status)}`} />
-                        <span className="text-sm font-medium">{getStatusLabel(customer.status)}</span>
+                        <div className={`w-2 h-2 rounded-full bg-green-500`} />
+                        <span className="text-sm font-medium">Ativo</span>
                       </div>
                       <p className="text-xs text-muted-foreground">Última interação: {customer.lastInteraction}</p>
                       <p className="text-xs text-muted-foreground">Agente: {customer.agent}</p>
@@ -208,6 +245,34 @@ const Customers = () => {
                     <Badge variant="outline" className="text-xs">
                       {customer.source}
                     </Badge>
+
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline">
+                        <MessageSquare className="w-4 h-4" />
+                      </Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="outline" onClick={() => setEditingCustomer(customer)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl">
+                          <CustomerForm
+                            onSubmit={handleUpdateCustomer}
+                            onCancel={() => setEditingCustomer(null)}
+                            initialData={editingCustomer}
+                          />
+                        </DialogContent>
+                      </Dialog>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDeleteCustomer(customer.id)}
+                        className="text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>

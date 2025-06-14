@@ -1,15 +1,18 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Play, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Search, Plus, Play, Pause, Edit, Trash2, BarChart3 } from 'lucide-react';
+import { WorkflowEditor } from '@/components/WorkflowEditor';
 
 const Workflows = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [showEditor, setShowEditor] = useState(false);
+  const [editingWorkflow, setEditingWorkflow] = useState(null);
 
-  const workflows = [
+  const [workflows, setWorkflows] = useState([
     {
       id: 1,
       name: 'Onboarding Automático',
@@ -20,6 +23,7 @@ const Workflows = () => {
       lastRun: '2 min atrás',
       trigger: 'Novo cliente cadastrado',
       actions: ['Envio WhatsApp', 'Email boas-vindas', 'Criação de ticket'],
+      conditions: ['Cliente tem email válido', 'Cliente não é VIP'],
       n8nId: 'wf_001'
     },
     {
@@ -32,6 +36,7 @@ const Workflows = () => {
       lastRun: '5 min atrás',
       trigger: 'Nova mensagem WhatsApp',
       actions: ['Análise IA', 'Resposta automática', 'Escalação se necessário'],
+      conditions: ['Pergunta não respondida no FAQ', 'Sentimento negativo'],
       n8nId: 'wf_002'
     },
     {
@@ -44,6 +49,7 @@ const Workflows = () => {
       lastRun: '1 hora atrás',
       trigger: 'Lead inativo por 24h',
       actions: ['Mensagem personalizada', 'Oferta especial', 'Reagendamento'],
+      conditions: ['Lead não respondeu', 'Lead não comprou'],
       n8nId: 'wf_003'
     },
     {
@@ -56,9 +62,44 @@ const Workflows = () => {
       lastRun: '10 min atrás',
       trigger: 'Pagamento recebido',
       actions: ['Confirmação PIX', 'Liberação produto', 'NF automática'],
+      conditions: ['Pagamento aprovado', 'Estoque disponível'],
       n8nId: 'wf_004'
     }
-  ];
+  ]);
+
+  const handleCreateWorkflow = (workflowData: any) => {
+    const newWorkflow = {
+      id: Date.now(),
+      ...workflowData,
+      executions: 0,
+      successRate: 0,
+      lastRun: 'Nunca',
+      n8nId: `wf_${Math.random().toString(36).substr(2, 9)}`
+    };
+    setWorkflows([...workflows, newWorkflow]);
+    setShowEditor(false);
+  };
+
+  const handleUpdateWorkflow = (workflowData: any) => {
+    setWorkflows(workflows.map(workflow => 
+      workflow.id === editingWorkflow?.id 
+        ? { ...workflow, ...workflowData }
+        : workflow
+    ));
+    setEditingWorkflow(null);
+  };
+
+  const handleToggleWorkflow = (id: number) => {
+    setWorkflows(workflows.map(workflow => 
+      workflow.id === id 
+        ? { ...workflow, status: workflow.status === 'running' ? 'paused' : 'running' }
+        : workflow
+    ));
+  };
+
+  const handleDeleteWorkflow = (id: number) => {
+    setWorkflows(workflows.filter(workflow => workflow.id !== id));
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -90,10 +131,20 @@ const Workflows = () => {
           <h1 className="text-3xl font-bold">Workflows n8n</h1>
           <p className="text-muted-foreground">Gerencie suas automações inteligentes</p>
         </div>
-        <Button className="bg-gradient-primary text-white">
-          <Plus className="w-4 h-4 mr-2" />
-          Criar Workflow
-        </Button>
+        <Dialog open={showEditor} onOpenChange={setShowEditor}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-primary text-white">
+              <Plus className="w-4 h-4 mr-2" />
+              Criar Workflow
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <WorkflowEditor
+              onSubmit={handleCreateWorkflow}
+              onCancel={() => setShowEditor(false)}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search and Actions */}
@@ -174,7 +225,7 @@ const Workflows = () => {
         </Card>
       </div>
 
-      {/* Workflow List */}
+      {/* Enhanced Workflow List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {filteredWorkflows.map((workflow) => (
           <Card key={workflow.id} className="border-0 bg-card/50 backdrop-blur-sm">
@@ -187,12 +238,45 @@ const Workflows = () => {
                   </CardTitle>
                   <CardDescription>{workflow.description}</CardDescription>
                 </div>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline">
-                    <Play className="w-4 h-4" />
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleToggleWorkflow(workflow.id)}
+                  >
+                    {workflow.status === 'running' ? 
+                      <Pause className="w-4 h-4" /> : 
+                      <Play className="w-4 h-4" />
+                    }
                   </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => setEditingWorkflow(workflow)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                      <WorkflowEditor
+                        onSubmit={handleUpdateWorkflow}
+                        onCancel={() => setEditingWorkflow(null)}
+                        initialData={editingWorkflow}
+                      />
+                    </DialogContent>
+                  </Dialog>
                   <Button size="sm" variant="outline">
-                    <X className="w-4 h-4" />
+                    <BarChart3 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDeleteWorkflow(workflow.id)}
+                    className="text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
@@ -220,6 +304,17 @@ const Workflows = () => {
                 <div className="text-sm">
                   <span className="text-muted-foreground">Trigger:</span>
                   <p className="mt-1 p-2 bg-muted/50 rounded text-xs">{workflow.trigger}</p>
+                </div>
+
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Condições:</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {workflow.conditions.map((condition, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {condition}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="text-sm">

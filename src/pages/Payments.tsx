@@ -2,53 +2,41 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus } from 'lucide-react';
+import { CreditCard, DollarSign, QrCode, TrendingUp, Calendar, Filter } from 'lucide-react';
+import { PaymentConfig } from '@/components/PaymentConfig';
 
 const Payments = () => {
-  const [pixKey, setPixKey] = useState('');
-
-  const transactions = [
+  const [payments] = useState([
     {
       id: 1,
       customer: 'João Silva',
-      amount: 299.99,
+      amount: 299.00,
       method: 'PIX',
       status: 'completed',
-      date: '2024-01-15 14:30',
-      reference: 'TXN001'
+      date: '2024-01-15T10:30:00',
+      transactionId: 'pix_123456789'
     },
     {
       id: 2,
       customer: 'Maria Santos',
-      amount: 599.99,
-      method: 'Cartão',
-      status: 'completed',
-      date: '2024-01-15 13:15',
-      reference: 'TXN002'
+      amount: 150.00,
+      method: 'Stripe',
+      status: 'pending',
+      date: '2024-01-15T09:15:00',
+      transactionId: 'st_987654321'
     },
     {
       id: 3,
       customer: 'Carlos Oliveira',
-      amount: 149.99,
-      method: 'PIX',
-      status: 'pending',
-      date: '2024-01-15 12:45',
-      reference: 'TXN003'
-    },
-    {
-      id: 4,
-      customer: 'Ana Costa',
-      amount: 899.99,
+      amount: 450.00,
       method: 'Mercado Pago',
       status: 'completed',
-      date: '2024-01-15 11:20',
-      reference: 'TXN004'
+      date: '2024-01-14T16:45:00',
+      transactionId: 'mp_456789123'
     }
-  ];
+  ]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -70,241 +58,158 @@ const Payments = () => {
 
   const getMethodIcon = (method: string) => {
     switch (method) {
-      case 'PIX': return '🟢';
-      case 'Cartão': return '💳';
-      case 'Mercado Pago': return '💰';
-      default: return '💱';
+      case 'PIX': return <QrCode className="w-4 h-4" />;
+      case 'Stripe': return <CreditCard className="w-4 h-4" />;
+      case 'Mercado Pago': return <DollarSign className="w-4 h-4" />;
+      default: return null;
     }
   };
+
+  const totalRevenue = payments
+    .filter(p => p.status === 'completed')
+    .reduce((sum, p) => sum + p.amount, 0);
+
+  const pendingAmount = payments
+    .filter(p => p.status === 'pending')
+    .reduce((sum, p) => sum + p.amount, 0);
 
   return (
     <div className="space-y-6 animate-fade-in-up">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Pagamentos</h1>
-          <p className="text-muted-foreground">Gerencie seus gateways e transações</p>
+          <p className="text-muted-foreground">Gerencie gateways e transações</p>
         </div>
-        <Button className="bg-gradient-primary text-white">
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Cobrança
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline">
+            <Filter className="w-4 h-4 mr-2" />
+            Filtros
+          </Button>
+          <Button variant="outline">
+            <Calendar className="w-4 h-4 mr-2" />
+            Relatório
+          </Button>
+        </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-0 bg-card/50 backdrop-blur-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-green-600">R$ 45.2k</p>
-                <p className="text-sm text-muted-foreground">Receita Mensal</p>
-              </div>
-              <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                <span className="text-xl">💰</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 bg-card/50 backdrop-blur-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold">156</p>
-                <p className="text-sm text-muted-foreground">Transações Hoje</p>
-              </div>
-              <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                <span className="text-xl">📊</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 bg-card/50 backdrop-blur-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-green-600">98.5%</p>
-                <p className="text-sm text-muted-foreground">Taxa de Sucesso</p>
-              </div>
-              <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                <span className="text-xl">✅</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 bg-card/50 backdrop-blur-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold">R$ 2.1k</p>
-                <p className="text-sm text-muted-foreground">Ticket Médio</p>
-              </div>
-              <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
-                <span className="text-xl">💎</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="gateways" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="gateways">Gateways</TabsTrigger>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="transactions">Transações</TabsTrigger>
           <TabsTrigger value="config">Configurações</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="gateways" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Stripe */}
+        <TabsContent value="overview">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <Card className="border-0 bg-card/50 backdrop-blur-sm">
-              <CardHeader>
+              <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded bg-purple-100 flex items-center justify-center">
-                      <span className="text-lg">💳</span>
-                    </div>
-                    Stripe
-                  </CardTitle>
-                  <Badge variant="default">Ativo</Badge>
-                </div>
-                <CardDescription>Gateway internacional para cartões</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Status:</span>
-                    <span className="text-green-600 font-medium">Conectado</span>
+                  <div>
+                    <p className="text-2xl font-bold text-green-600">R$ {totalRevenue.toFixed(2)}</p>
+                    <p className="text-sm text-muted-foreground">Receita Total</p>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Taxa:</span>
-                    <span className="font-medium">3.4% + R$ 0.39</span>
+                  <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-green-600" />
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Transações:</span>
-                    <span className="font-medium">89 hoje</span>
-                  </div>
-                  <Button className="w-full mt-4" variant="outline">
-                    Configurar
-                  </Button>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Mercado Pago */}
             <Card className="border-0 bg-card/50 backdrop-blur-sm">
-              <CardHeader>
+              <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded bg-blue-100 flex items-center justify-center">
-                      <span className="text-lg">💰</span>
-                    </div>
-                    Mercado Pago
-                  </CardTitle>
-                  <Badge variant="default">Ativo</Badge>
-                </div>
-                <CardDescription>Gateway brasileiro completo</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Status:</span>
-                    <span className="text-green-600 font-medium">Conectado</span>
+                  <div>
+                    <p className="text-2xl font-bold text-yellow-600">R$ {pendingAmount.toFixed(2)}</p>
+                    <p className="text-sm text-muted-foreground">Pendente</p>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Taxa:</span>
-                    <span className="font-medium">4.99%</span>
+                  <div className="w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center">
+                    <Calendar className="w-6 h-6 text-yellow-600" />
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Transações:</span>
-                    <span className="font-medium">45 hoje</span>
-                  </div>
-                  <Button className="w-full mt-4" variant="outline">
-                    Configurar
-                  </Button>
                 </div>
               </CardContent>
             </Card>
 
-            {/* PIX */}
             <Card className="border-0 bg-card/50 backdrop-blur-sm">
-              <CardHeader>
+              <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded bg-green-100 flex items-center justify-center">
-                      <span className="text-lg">🟢</span>
-                    </div>
-                    PIX
-                  </CardTitle>
-                  <Badge variant="default">Ativo</Badge>
+                  <div>
+                    <p className="text-2xl font-bold">{payments.length}</p>
+                    <p className="text-sm text-muted-foreground">Transações</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <CreditCard className="w-6 h-6 text-blue-600" />
+                  </div>
                 </div>
-                <CardDescription>Pagamentos instantâneos</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Status:</span>
-                    <span className="text-green-600 font-medium">Conectado</span>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 bg-card/50 backdrop-blur-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold text-green-600">
+                      {((payments.filter(p => p.status === 'completed').length / payments.length) * 100).toFixed(1)}%
+                    </p>
+                    <p className="text-sm text-muted-foreground">Taxa de Sucesso</p>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Taxa:</span>
-                    <span className="font-medium">R$ 0.99</span>
+                  <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <span className="text-xl">✓</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Transações:</span>
-                    <span className="font-medium">22 hoje</span>
-                  </div>
-                  <Button className="w-full mt-4" variant="outline">
-                    Configurar
-                  </Button>
                 </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="transactions" className="space-y-6">
+        <TabsContent value="transactions">
           <Card className="border-0 bg-card/50 backdrop-blur-sm">
             <CardHeader>
               <CardTitle>Transações Recentes</CardTitle>
               <CardDescription>
-                Histórico de pagamentos e cobranças
+                Lista completa de todas as transações
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {transactions.map((transaction) => (
-                  <div key={transaction.id} className="flex items-center justify-between p-4 rounded-lg border border-border bg-background/50">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold">
-                        {getMethodIcon(transaction.method)}
-                      </div>
-                      <div>
-                        <h4 className="font-medium">{transaction.customer}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {transaction.method} • {transaction.date}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Ref: {transaction.reference}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="font-bold text-lg">
-                          R$ {transaction.amount.toFixed(2)}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${getStatusColor(transaction.status)}`} />
-                          <span className="text-sm">{getStatusLabel(transaction.status)}</span>
+                {payments.map((payment) => (
+                  <div key={payment.id} className="p-4 rounded-lg border border-border bg-background/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-lg bg-gradient-primary flex items-center justify-center text-white font-bold">
+                          {payment.customer.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">{payment.customer}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(payment.date).toLocaleString('pt-BR')}
+                          </p>
+                          <p className="text-xs text-muted-foreground">ID: {payment.transactionId}</p>
                         </div>
                       </div>
-                      <Button variant="outline" size="sm">
-                        Detalhes
-                      </Button>
+
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-lg font-bold">R$ {payment.amount.toFixed(2)}</p>
+                          <div className="flex items-center gap-2">
+                            {getMethodIcon(payment.method)}
+                            <span className="text-sm text-muted-foreground">{payment.method}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${getStatusColor(payment.status)}`} />
+                          <Badge 
+                            variant={payment.status === 'completed' ? 'default' : payment.status === 'pending' ? 'secondary' : 'destructive'}
+                          >
+                            {getStatusLabel(payment.status)}
+                          </Badge>
+                        </div>
+
+                        <Button size="sm" variant="outline">
+                          Detalhes
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -313,59 +218,24 @@ const Payments = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="config" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border-0 bg-card/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle>Configuração PIX</CardTitle>
-                <CardDescription>
-                  Configure sua chave PIX para recebimentos
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="pix-key">Chave PIX Padrão</Label>
-                  <Input
-                    id="pix-key"
-                    placeholder="Digite sua chave PIX (CPF, email, telefone ou chave aleatória)"
-                    value={pixKey}
-                    onChange={(e) => setPixKey(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Esta chave será usada como padrão para todos os pagamentos PIX
-                  </p>
-                </div>
-                <Button className="w-full">Salvar Chave PIX</Button>
-              </CardContent>
-            </Card>
+        <TabsContent value="config">
+          <PaymentConfig />
+        </TabsContent>
 
-            <Card className="border-0 bg-card/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle>Configurações Gerais</CardTitle>
-                <CardDescription>
-                  Ajustes globais de pagamento
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Gateway Padrão</Label>
-                  <select className="w-full p-2 rounded-md border border-input bg-background">
-                    <option>PIX (Instantâneo)</option>
-                    <option>Mercado Pago</option>
-                    <option>Stripe</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Moeda Padrão</Label>
-                  <select className="w-full p-2 rounded-md border border-input bg-background">
-                    <option>BRL - Real Brasileiro</option>
-                    <option>USD - Dólar Americano</option>
-                  </select>
-                </div>
-                <Button className="w-full">Salvar Configurações</Button>
-              </CardContent>
-            </Card>
-          </div>
+        <TabsContent value="analytics">
+          <Card className="border-0 bg-card/50 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle>Analytics de Pagamentos</CardTitle>
+              <CardDescription>
+                Insights sobre suas transações
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Gráficos e analytics em desenvolvimento...</p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
