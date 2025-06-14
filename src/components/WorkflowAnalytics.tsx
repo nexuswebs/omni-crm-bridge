@@ -2,8 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, TrendingDown, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
 interface WorkflowAnalyticsProps {
   workflow: any;
@@ -12,96 +11,73 @@ interface WorkflowAnalyticsProps {
 
 export const WorkflowAnalytics = ({ workflow, onClose }: WorkflowAnalyticsProps) => {
   const executionData = [
-    { date: '01/01', execucoes: 45, sucessos: 43, falhas: 2 },
-    { date: '02/01', execucoes: 52, sucessos: 48, falhas: 4 },
-    { date: '03/01', execucoes: 38, sucessos: 36, falhas: 2 },
-    { date: '04/01', execucoes: 61, sucessos: 58, falhas: 3 },
-    { date: '05/01', execucoes: 47, sucessos: 45, falhas: 2 },
-    { date: '06/01', execucoes: 55, sucessos: 52, falhas: 3 },
-    { date: '07/01', execucoes: 49, sucessos: 47, falhas: 2 }
+    { date: '01/01', executions: 12, success: 11, failed: 1 },
+    { date: '02/01', executions: 15, success: 14, failed: 1 },
+    { date: '03/01', executions: 18, success: 17, failed: 1 },
+    { date: '04/01', executions: 22, success: 21, failed: 1 },
+    { date: '05/01', executions: 25, success: 24, failed: 1 },
+    { date: '06/01', executions: 19, success: 18, failed: 1 },
+    { date: '07/01', executions: 21, success: 20, failed: 1 }
   ];
 
   const performanceData = [
-    { hora: '00h', tempo: 1.2 },
-    { hora: '04h', tempo: 0.9 },
-    { hora: '08h', tempo: 2.1 },
-    { hora: '12h', tempo: 1.8 },
-    { hora: '16h', tempo: 2.4 },
-    { hora: '20h', tempo: 1.6 }
+    { name: 'Sucesso', value: 94, color: '#10b981' },
+    { name: 'Falha', value: 6, color: '#ef4444' }
   ];
 
-  const statusData = [
-    { name: 'Sucesso', value: 294, color: '#10b981' },
-    { name: 'Falha', value: 18, color: '#ef4444' },
-    { name: 'Timeout', value: 8, color: '#f59e0b' },
-    { name: 'Cancelado', value: 3, color: '#6b7280' }
-  ];
+  const avgExecutionTime = 1.8;
+  const totalExecutions = 132;
+  const successRate = 94.7;
 
   return (
     <Card className="w-full max-w-6xl">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            Análise: {workflow.name}
-            <Badge variant={workflow.status === 'running' ? 'default' : 'secondary'}>
-              {workflow.status === 'running' ? 'Ativo' : 'Pausado'}
-            </Badge>
-          </CardTitle>
+          <div>
+            <CardTitle>Análise do Workflow</CardTitle>
+            <p className="text-muted-foreground">{workflow.name}</p>
+          </div>
           <Button variant="outline" onClick={onClose}>Fechar</Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Métricas Gerais */}
+        {/* KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Execuções</p>
-                  <p className="text-2xl font-bold">323</p>
-                </div>
-                <TrendingUp className="w-8 h-8 text-green-500" />
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600">{totalExecutions}</p>
+                <p className="text-sm text-muted-foreground">Total de Execuções</p>
               </div>
-              <p className="text-xs text-green-600 mt-1">+12% vs semana anterior</p>
             </CardContent>
           </Card>
-
+          
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Taxa Sucesso</p>
-                  <p className="text-2xl font-bold text-green-600">91.0%</p>
-                </div>
-                <CheckCircle className="w-8 h-8 text-green-500" />
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-600">{successRate}%</p>
+                <p className="text-sm text-muted-foreground">Taxa de Sucesso</p>
               </div>
-              <p className="text-xs text-green-600 mt-1">+2.3% vs semana anterior</p>
             </CardContent>
           </Card>
-
+          
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Tempo Médio</p>
-                  <p className="text-2xl font-bold">1.7s</p>
-                </div>
-                <Clock className="w-8 h-8 text-blue-500" />
+              <div className="text-center">
+                <p className="text-2xl font-bold text-purple-600">{avgExecutionTime}s</p>
+                <p className="text-sm text-muted-foreground">Tempo Médio</p>
               </div>
-              <p className="text-xs text-red-600 mt-1">+0.2s vs semana anterior</p>
             </CardContent>
           </Card>
-
+          
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Falhas</p>
-                  <p className="text-2xl font-bold text-red-600">29</p>
-                </div>
-                <XCircle className="w-8 h-8 text-red-500" />
+              <div className="text-center">
+                <Badge variant={workflow.status === 'running' ? 'default' : 'secondary'}>
+                  {workflow.status === 'running' ? 'Ativo' : 'Inativo'}
+                </Badge>
+                <p className="text-sm text-muted-foreground mt-1">Status Atual</p>
               </div>
-              <p className="text-xs text-red-600 mt-1">+3 vs semana anterior</p>
             </CardContent>
           </Card>
         </div>
@@ -113,101 +89,87 @@ export const WorkflowAnalytics = ({ workflow, onClose }: WorkflowAnalyticsProps)
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={executionData}>
+              <LineChart data={executionData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="sucessos" fill="#10b981" name="Sucessos" />
-                <Bar dataKey="falhas" fill="#ef4444" name="Falhas" />
-              </BarChart>
+                <Line type="monotone" dataKey="executions" stroke="#3b82f6" strokeWidth={2} />
+                <Line type="monotone" dataKey="success" stroke="#10b981" strokeWidth={2} />
+                <Line type="monotone" dataKey="failed" stroke="#ef4444" strokeWidth={2} />
+              </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Gráficos de Performance e Status */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Gráfico de Performance */}
           <Card>
             <CardHeader>
-              <CardTitle>Performance por Horário</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={performanceData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="hora" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="tempo" stroke="#3b82f6" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Distribuição de Status</CardTitle>
+              <CardTitle>Performance</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
                   <Pie
-                    data={statusData}
+                    data={performanceData}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
                     outerRadius={100}
                     dataKey="value"
+                    label={({ name, value }) => `${name}: ${value}%`}
                   >
-                    {statusData.map((entry, index) => (
+                    {performanceData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="flex flex-wrap gap-2 mt-4">
-                {statusData.map((status, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: status.color }}
-                    />
-                    <span className="text-sm">{status.name}: {status.value}</span>
-                  </div>
-                ))}
+            </CardContent>
+          </Card>
+
+          {/* Informações Detalhadas */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Detalhes do Workflow</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-medium">Trigger:</p>
+                <p className="text-sm text-muted-foreground">{workflow.trigger}</p>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium">Condições:</p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {workflow.conditions.map((condition: string, index: number) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {condition}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium">Ações:</p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {workflow.actions.map((action: string, index: number) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {action}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium">Última Execução:</p>
+                <p className="text-sm text-muted-foreground">{workflow.lastRun}</p>
               </div>
             </CardContent>
           </Card>
         </div>
-
-        {/* Alertas e Recomendações */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-yellow-500" />
-              Alertas e Recomendações
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <AlertTriangle className="w-5 h-5 text-yellow-500 mt-0.5" />
-                <div>
-                  <p className="font-medium text-yellow-800">Tempo de execução aumentando</p>
-                  <p className="text-sm text-yellow-700">O tempo médio de execução aumentou 15% esta semana. Considere otimizar as ações mais lentas.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-blue-500 mt-0.5" />
-                <div>
-                  <p className="font-medium text-blue-800">Pico de uso às 16h</p>
-                  <p className="text-sm text-blue-700">Maior volume de execuções entre 16h-17h. Configure limites de rate para evitar sobrecarga.</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </CardContent>
     </Card>
   );

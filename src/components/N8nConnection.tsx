@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
-import { AlertCircle, CheckCircle, Loader2, Globe, Key, Database } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { CheckCircle, XCircle, Zap, Settings, Code, TestTube } from 'lucide-react';
 
 interface N8nConnectionProps {
   onClose: () => void;
@@ -16,228 +16,258 @@ interface N8nConnectionProps {
 
 export const N8nConnection = ({ onClose }: N8nConnectionProps) => {
   const { toast } = useToast();
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const [connectionData, setConnectionData] = useState({
-    url: 'https://n8n.exemplo.com',
+  const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
+  const [config, setConfig] = useState({
+    apiUrl: '',
     apiKey: '',
-    webhook: 'https://webhook.exemplo.com/n8n',
-    autoSync: true,
-    enableLogs: true
+    webhookUrl: '',
+    instanceName: 'CRM Instance'
   });
 
-  const [testResults, setTestResults] = useState({
-    connection: null as boolean | null,
-    webhooks: null as boolean | null,
-    workflows: null as boolean | null
-  });
+  const [testPayload, setTestPayload] = useState(`{
+  "event": "test_connection",
+  "customer": {
+    "id": 123,
+    "name": "Cliente Teste",
+    "phone": "+5511999999999"
+  },
+  "timestamp": "${new Date().toISOString()}"
+}`);
 
   const handleConnect = async () => {
-    setIsConnecting(true);
-    
+    if (!config.apiUrl || !config.apiKey) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha URL da API e API Key",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setConnectionStatus('connecting');
+
     try {
-      // Simular teste de conexão
+      // Simular conexão com n8n
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      setTestResults({
-        connection: true,
-        webhooks: true,
-        workflows: true
-      });
-      
-      setIsConnected(true);
-      
+      setConnectionStatus('connected');
       toast({
-        title: "Conexão estabelecida!",
-        description: "n8n conectado com sucesso. Workflows sincronizados.",
+        title: "Conectado com sucesso!",
+        description: "n8n está conectado e pronto para usar.",
       });
-      
     } catch (error) {
-      setTestResults({
-        connection: false,
-        webhooks: false,
-        workflows: false
-      });
-      
+      setConnectionStatus('error');
       toast({
-        title: "Falha na conexão",
-        description: "Não foi possível conectar ao n8n. Verifique as configurações.",
-        variant: "destructive"
+        title: "Erro na conexão",
+        description: "Não foi possível conectar com o n8n. Verifique as configurações.",
+        variant: "destructive",
       });
-    } finally {
-      setIsConnecting(false);
+    }
+  };
+
+  const handleTestWebhook = async () => {
+    if (!config.webhookUrl) {
+      toast({
+        title: "URL do Webhook necessária",
+        description: "Configure a URL do webhook antes de testar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(config.webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: testPayload,
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Webhook testado com sucesso!",
+          description: "O webhook foi executado corretamente.",
+        });
+      } else {
+        throw new Error('Webhook failed');
+      }
+    } catch (error) {
+      toast({
+        title: "Erro no teste do webhook",
+        description: "Não foi possível executar o webhook. Verifique a URL.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleDisconnect = () => {
-    setIsConnected(false);
-    setTestResults({
-      connection: null,
-      webhooks: null,
-      workflows: null
+    setConnectionStatus('disconnected');
+    setConfig({
+      apiUrl: '',
+      apiKey: '',
+      webhookUrl: '',
+      instanceName: 'CRM Instance'
     });
-    
     toast({
       title: "Desconectado",
-      description: "Conexão com n8n foi removida.",
+      description: "n8n foi desconectado com sucesso.",
     });
   };
 
-  const handleSyncWorkflows = async () => {
-    toast({
-      title: "Sincronização iniciada",
-      description: "Buscando workflows do n8n...",
-    });
-    
-    // Simular sincronização
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    toast({
-      title: "Workflows sincronizados",
-      description: "12 workflows importados com sucesso.",
-    });
+  const getStatusBadge = () => {
+    switch (connectionStatus) {
+      case 'connected':
+        return <Badge className="bg-green-500 text-white"><CheckCircle className="w-3 h-3 mr-1" />Conectado</Badge>;
+      case 'connecting':
+        return <Badge className="bg-yellow-500 text-white">Conectando...</Badge>;
+      case 'error':
+        return <Badge className="bg-red-500 text-white"><XCircle className="w-3 h-3 mr-1" />Erro</Badge>;
+      default:
+        return <Badge variant="outline">Desconectado</Badge>;
+    }
   };
-
-  const TestResult = ({ label, status }: { label: string; status: boolean | null }) => (
-    <div className="flex items-center justify-between py-2">
-      <span className="text-sm">{label}</span>
-      {status === null && <div className="w-4 h-4 rounded-full bg-gray-200" />}
-      {status === true && <CheckCircle className="w-4 h-4 text-green-500" />}
-      {status === false && <AlertCircle className="w-4 h-4 text-red-500" />}
-    </div>
-  );
 
   return (
-    <Card className="w-full max-w-2xl">
+    <Card className="w-full max-w-4xl">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="w-5 h-5" />
-            Conectar n8n
-            {isConnected && <Badge className="bg-green-500">Conectado</Badge>}
-          </CardTitle>
+          <div className="flex items-center space-x-2">
+            <Zap className="w-5 h-5" />
+            <CardTitle>Conexão n8n</CardTitle>
+            {getStatusBadge()}
+          </div>
           <Button variant="outline" onClick={onClose}>Fechar</Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Status da Conexão */}
-        {isConnected && (
-          <Card className="bg-green-50 border-green-200">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <div>
-                  <p className="font-medium text-green-800">Conectado ao n8n</p>
-                  <p className="text-sm text-green-600">Última sincronização: há 2 minutos</p>
-                </div>
+      <CardContent>
+        <Tabs defaultValue="config" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="config">
+              <Settings className="w-4 h-4 mr-2" />
+              Configuração
+            </TabsTrigger>
+            <TabsTrigger value="webhooks">
+              <Code className="w-4 h-4 mr-2" />
+              Webhooks
+            </TabsTrigger>
+            <TabsTrigger value="test">
+              <TestTube className="w-4 h-4 mr-2" />
+              Teste
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="config" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="apiUrl">URL da API n8n</Label>
+                <Input
+                  id="apiUrl"
+                  value={config.apiUrl}
+                  onChange={(e) => setConfig({...config, apiUrl: e.target.value})}
+                  placeholder="https://sua-instancia.n8n.io/api/v1"
+                />
               </div>
-            </CardContent>
-          </Card>
-        )}
 
-        {/* Configurações de Conexão */}
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="url">URL do n8n *</Label>
-            <Input
-              id="url"
-              value={connectionData.url}
-              onChange={(e) => setConnectionData({ ...connectionData, url: e.target.value })}
-              placeholder="https://n8n.seudominio.com"
-              disabled={isConnected}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="apiKey">API Key *</Label>
-            <Input
-              id="apiKey"
-              type="password"
-              value={connectionData.apiKey}
-              onChange={(e) => setConnectionData({ ...connectionData, apiKey: e.target.value })}
-              placeholder="n8n_api_key_aqui"
-              disabled={isConnected}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="webhook">Webhook URL</Label>
-            <Input
-              id="webhook"
-              value={connectionData.webhook}
-              onChange={(e) => setConnectionData({ ...connectionData, webhook: e.target.value })}
-              placeholder="https://webhook.seudominio.com/n8n"
-              disabled={isConnected}
-            />
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Configurações Avançadas */}
-        <div className="space-y-4">
-          <h4 className="font-medium">Configurações Avançadas</h4>
-          
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Sincronização Automática</Label>
-              <p className="text-sm text-muted-foreground">Sincronizar workflows automaticamente</p>
+              <div className="space-y-2">
+                <Label htmlFor="apiKey">API Key</Label>
+                <Input
+                  id="apiKey"
+                  type="password"
+                  value={config.apiKey}
+                  onChange={(e) => setConfig({...config, apiKey: e.target.value})}
+                  placeholder="n8n_api_key_aqui"
+                />
+              </div>
             </div>
-            <Switch
-              checked={connectionData.autoSync}
-              onCheckedChange={(checked) => setConnectionData({ ...connectionData, autoSync: checked })}
-            />
-          </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Logs Detalhados</Label>
-              <p className="text-sm text-muted-foreground">Capturar logs de execução do n8n</p>
+            <div className="space-y-2">
+              <Label htmlFor="instanceName">Nome da Instância</Label>
+              <Input
+                id="instanceName"
+                value={config.instanceName}
+                onChange={(e) => setConfig({...config, instanceName: e.target.value})}
+                placeholder="CRM Instance"
+              />
             </div>
-            <Switch
-              checked={connectionData.enableLogs}
-              onCheckedChange={(checked) => setConnectionData({ ...connectionData, enableLogs: checked })}
-            />
-          </div>
-        </div>
 
-        {/* Teste de Conexão */}
-        {(testResults.connection !== null) && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Resultado dos Testes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TestResult label="Conexão com n8n" status={testResults.connection} />
-              <TestResult label="Webhooks funcionando" status={testResults.webhooks} />
-              <TestResult label="Acesso aos workflows" status={testResults.workflows} />
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Ações */}
-        <div className="flex gap-2 justify-end">
-          {!isConnected ? (
-            <Button 
-              onClick={handleConnect} 
-              disabled={isConnecting || !connectionData.url || !connectionData.apiKey}
-              className="bg-gradient-primary text-white"
-            >
-              {isConnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {isConnecting ? 'Conectando...' : 'Conectar'}
-            </Button>
-          ) : (
             <div className="flex gap-2">
-              <Button variant="outline" onClick={handleSyncWorkflows}>
-                <Database className="w-4 h-4 mr-2" />
-                Sincronizar Workflows
-              </Button>
-              <Button variant="outline" onClick={handleDisconnect}>
-                Desconectar
-              </Button>
+              {connectionStatus === 'connected' ? (
+                <Button onClick={handleDisconnect} variant="destructive">
+                  Desconectar
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handleConnect} 
+                  disabled={connectionStatus === 'connecting'}
+                >
+                  {connectionStatus === 'connecting' ? 'Conectando...' : 'Conectar'}
+                </Button>
+              )}
             </div>
-          )}
-        </div>
+          </TabsContent>
+
+          <TabsContent value="webhooks" className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="webhookUrl">URL do Webhook</Label>
+              <Input
+                id="webhookUrl"
+                value={config.webhookUrl}
+                onChange={(e) => setConfig({...config, webhookUrl: e.target.value})}
+                placeholder="https://sua-instancia.n8n.io/webhook/crm"
+              />
+            </div>
+
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <h4 className="font-medium mb-2">Como configurar o webhook no n8n:</h4>
+              <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+                <li>Acesse seu n8n e crie um novo workflow</li>
+                <li>Adicione um nó "Webhook" como trigger</li>
+                <li>Configure o método como "POST"</li>
+                <li>Copie a URL gerada e cole no campo acima</li>
+                <li>Ative o workflow</li>
+              </ol>
+            </div>
+
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="font-medium mb-2 text-blue-800">Eventos disponíveis:</h4>
+              <ul className="list-disc list-inside space-y-1 text-sm text-blue-700">
+                <li>customer_created - Novo cliente cadastrado</li>
+                <li>message_received - Nova mensagem recebida</li>
+                <li>payment_received - Pagamento recebido</li>
+                <li>ticket_created - Novo ticket criado</li>
+                <li>workflow_executed - Workflow executado</li>
+              </ul>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="test" className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="testPayload">Payload de Teste</Label>
+              <Textarea
+                id="testPayload"
+                value={testPayload}
+                onChange={(e) => setTestPayload(e.target.value)}
+                rows={10}
+                className="font-mono text-sm"
+              />
+            </div>
+
+            <Button onClick={handleTestWebhook} disabled={!config.webhookUrl}>
+              Testar Webhook
+            </Button>
+
+            <div className="bg-yellow-50 p-4 rounded-lg">
+              <h4 className="font-medium mb-2 text-yellow-800">Dicas para teste:</h4>
+              <ul className="list-disc list-inside space-y-1 text-sm text-yellow-700">
+                <li>Certifique-se de que o workflow n8n está ativo</li>
+                <li>Verifique se a URL do webhook está correta</li>
+                <li>Monitore os logs do n8n para ver se o webhook foi recebido</li>
+                <li>Use o payload personalizado para testar cenários específicos</li>
+              </ul>
+            </div>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );

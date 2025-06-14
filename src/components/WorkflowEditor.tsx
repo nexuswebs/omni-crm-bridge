@@ -7,188 +7,203 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, X, Settings } from 'lucide-react';
+import { Plus, X, Save, Play } from 'lucide-react';
 
 interface WorkflowEditorProps {
-  onSubmit: (workflow: any) => void;
+  onSubmit: (workflowData: any) => void;
   onCancel: () => void;
   initialData?: any;
 }
 
 export const WorkflowEditor = ({ onSubmit, onCancel, initialData }: WorkflowEditorProps) => {
-  const [formData, setFormData] = useState({
-    name: initialData?.name || '',
-    description: initialData?.description || '',
-    trigger: initialData?.trigger || '',
-    status: initialData?.status || 'paused',
-    actions: initialData?.actions || [],
-    conditions: initialData?.conditions || []
-  });
-
-  const [newAction, setNewAction] = useState('');
+  const [name, setName] = useState(initialData?.name || '');
+  const [description, setDescription] = useState(initialData?.description || '');
+  const [trigger, setTrigger] = useState(initialData?.trigger || '');
+  const [conditions, setConditions] = useState(initialData?.conditions || []);
+  const [actions, setActions] = useState(initialData?.actions || []);
   const [newCondition, setNewCondition] = useState('');
+  const [newAction, setNewAction] = useState('');
 
-  const handleAddAction = () => {
-    if (newAction) {
-      setFormData({ ...formData, actions: [...formData.actions, newAction] });
-      setNewAction('');
-    }
-  };
+  const triggerOptions = [
+    'Novo cliente cadastrado',
+    'Nova mensagem WhatsApp',
+    'Pagamento recebido',
+    'Lead inativo por 24h',
+    'Ticket criado',
+    'Cliente VIP identificado'
+  ];
 
-  const handleRemoveAction = (index: number) => {
-    setFormData({ ...formData, actions: formData.actions.filter((_, i) => i !== index) });
-  };
+  const actionOptions = [
+    'Envio WhatsApp',
+    'Email boas-vindas',
+    'Criação de ticket',
+    'Análise IA',
+    'Resposta automática',
+    'Escalação',
+    'Mensagem personalizada',
+    'Oferta especial',
+    'Confirmação PIX',
+    'Liberação produto',
+    'NF automática'
+  ];
 
   const handleAddCondition = () => {
-    if (newCondition) {
-      setFormData({ ...formData, conditions: [...formData.conditions, newCondition] });
+    if (newCondition.trim()) {
+      setConditions([...conditions, newCondition.trim()]);
       setNewCondition('');
     }
   };
 
   const handleRemoveCondition = (index: number) => {
-    setFormData({ ...formData, conditions: formData.conditions.filter((_, i) => i !== index) });
+    setConditions(conditions.filter((_, i) => i !== index));
+  };
+
+  const handleAddAction = () => {
+    if (newAction.trim()) {
+      setActions([...actions, newAction.trim()]);
+      setNewAction('');
+    }
+  };
+
+  const handleRemoveAction = (index: number) => {
+    setActions(actions.filter((_, i) => i !== index));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit({
+      name,
+      description,
+      trigger,
+      conditions,
+      actions,
+      status: 'draft'
+    });
   };
 
   return (
     <Card className="w-full max-w-4xl">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Settings className="w-5 h-5" />
-          {initialData ? 'Editar Workflow' : 'Novo Workflow'}
+        <CardTitle>
+          {initialData ? 'Editar Workflow' : 'Criar Novo Workflow'}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="name">Nome do Workflow *</Label>
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome do Workflow</Label>
               <Input
                 id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ex: Onboarding Automático"
                 required
               />
             </div>
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+            
+            <div className="space-y-2">
+              <Label htmlFor="trigger">Trigger</Label>
+              <Select value={trigger} onValueChange={setTrigger} required>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione o trigger" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="running">Rodando</SelectItem>
-                  <SelectItem value="paused">Pausado</SelectItem>
-                  <SelectItem value="error">Erro</SelectItem>
+                  {triggerOptions.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="description">Descrição</Label>
             <Textarea
               id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={2}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Descreva o que este workflow faz..."
+              rows={3}
             />
           </div>
 
-          <div>
-            <Label htmlFor="trigger">Trigger (Gatilho)</Label>
-            <Select value={formData.trigger} onValueChange={(value) => setFormData({ ...formData, trigger: value })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um gatilho" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Novo cliente cadastrado">Novo cliente cadastrado</SelectItem>
-                <SelectItem value="Nova mensagem WhatsApp">Nova mensagem WhatsApp</SelectItem>
-                <SelectItem value="Lead inativo por 24h">Lead inativo por 24h</SelectItem>
-                <SelectItem value="Pagamento recebido">Pagamento recebido</SelectItem>
-                <SelectItem value="Horário específico">Horário específico</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <div className="space-y-4">
+            <div>
+              <Label>Condições</Label>
+              <div className="flex gap-2 mt-2">
+                <Input
+                  value={newCondition}
+                  onChange={(e) => setNewCondition(e.target.value)}
+                  placeholder="Ex: Cliente tem email válido"
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCondition())}
+                />
+                <Button type="button" onClick={handleAddCondition}>
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {conditions.map((condition, index) => (
+                  <Badge key={index} variant="outline" className="flex items-center gap-1">
+                    {condition}
+                    <X
+                      className="w-3 h-3 cursor-pointer hover:text-red-500"
+                      onClick={() => handleRemoveCondition(index)}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            </div>
 
-          <div>
-            <Label>Condições</Label>
-            <div className="flex gap-2 mb-2">
-              <Input
-                value={newCondition}
-                onChange={(e) => setNewCondition(e.target.value)}
-                placeholder="Nova condição"
-              />
-              <Button type="button" onClick={handleAddCondition}>
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="space-y-1">
-              {formData.conditions.map((condition, index) => (
-                <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
-                  <span className="flex-1 text-sm">{condition}</span>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleRemoveCondition(index)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <Label>Ações</Label>
-            <div className="flex gap-2 mb-2">
-              <Select value={newAction} onValueChange={setNewAction}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Selecione uma ação" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Envio WhatsApp">Envio WhatsApp</SelectItem>
-                  <SelectItem value="Email boas-vindas">Email boas-vindas</SelectItem>
-                  <SelectItem value="Criação de ticket">Criação de ticket</SelectItem>
-                  <SelectItem value="Análise IA">Análise IA</SelectItem>
-                  <SelectItem value="Resposta automática">Resposta automática</SelectItem>
-                  <SelectItem value="Confirmação PIX">Confirmação PIX</SelectItem>
-                  <SelectItem value="Liberação produto">Liberação produto</SelectItem>
-                  <SelectItem value="NF automática">NF automática</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button type="button" onClick={handleAddAction}>
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="space-y-1">
-              {formData.actions.map((action, index) => (
-                <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
-                  <span className="flex-1 text-sm">{action}</span>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleRemoveAction(index)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
+            <div>
+              <Label>Ações</Label>
+              <div className="flex gap-2 mt-2">
+                <Select value="" onValueChange={(value) => {
+                  setActions([...actions, value]);
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma ação" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {actionOptions.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  value={newAction}
+                  onChange={(e) => setNewAction(e.target.value)}
+                  placeholder="Ou digite uma ação personalizada"
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddAction())}
+                />
+                <Button type="button" onClick={handleAddAction}>
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {actions.map((action, index) => (
+                  <Badge key={index} variant="outline" className="flex items-center gap-1">
+                    {action}
+                    <X
+                      className="w-3 h-3 cursor-pointer hover:text-red-500"
+                      onClick={() => handleRemoveAction(index)}
+                    />
+                  </Badge>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="flex gap-2 justify-end">
+          <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancelar
             </Button>
-            <Button type="submit" className="bg-gradient-primary text-white">
+            <Button type="submit">
+              <Save className="w-4 h-4 mr-2" />
               {initialData ? 'Atualizar' : 'Criar'} Workflow
             </Button>
           </div>
