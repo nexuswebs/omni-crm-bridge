@@ -1,114 +1,116 @@
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, Filter, Download, RefreshCw } from 'lucide-react';
-import { format } from 'date-fns';
 
 interface WorkflowLogsProps {
-  workflowId?: string;
   onClose: () => void;
 }
 
-export const WorkflowLogs = ({ workflowId, onClose }: WorkflowLogsProps) => {
+export const WorkflowLogs = ({ onClose }: WorkflowLogsProps) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [logLevel, setLogLevel] = useState('all');
-  const [logs, setLogs] = useState([
+  const [filterLevel, setFilterLevel] = useState('all');
+  const [filterWorkflow, setFilterWorkflow] = useState('all');
+
+  const logs = [
     {
       id: 1,
-      timestamp: new Date('2024-01-15T10:30:00'),
-      level: 'info',
-      message: 'Workflow iniciado com sucesso',
-      workflowName: 'Onboarding Automático',
-      executionId: 'exec_001',
-      duration: 1250
+      timestamp: '2024-01-15 10:30:15',
+      workflow: 'Onboarding Automático',
+      level: 'success',
+      message: 'Workflow executado com sucesso para cliente João Silva',
+      execution_id: 'exec_123456',
+      duration: '2.3s'
     },
     {
       id: 2,
-      timestamp: new Date('2024-01-15T10:30:01'),
-      level: 'success',
-      message: 'Mensagem WhatsApp enviada para +5511999999999',
-      workflowName: 'Onboarding Automático',
-      executionId: 'exec_001',
-      duration: 850
+      timestamp: '2024-01-15 10:25:33',
+      workflow: 'Suporte Inteligente',
+      level: 'info',
+      message: 'Nova mensagem processada via IA',
+      execution_id: 'exec_123455',
+      duration: '1.1s'
     },
     {
       id: 3,
-      timestamp: new Date('2024-01-15T10:29:45'),
-      level: 'error',
-      message: 'Falha ao conectar com API externa - Timeout após 30s',
-      workflowName: 'Suporte Inteligente',
-      executionId: 'exec_002',
-      duration: 30000
+      timestamp: '2024-01-15 10:20:45',
+      workflow: 'Follow-up Vendas',
+      level: 'warning',
+      message: 'Lead não respondeu após 3 tentativas',
+      execution_id: 'exec_123454',
+      duration: '0.8s'
     },
     {
       id: 4,
-      timestamp: new Date('2024-01-15T10:29:30'),
-      level: 'warning',
-      message: 'Taxa de API próxima do limite (90/100)',
-      workflowName: 'Follow-up Vendas',
-      executionId: 'exec_003',
-      duration: 2100
+      timestamp: '2024-01-15 10:15:22',
+      workflow: 'Processamento Pagamentos',
+      level: 'error',
+      message: 'Falha ao processar pagamento - Gateway indisponível',
+      execution_id: 'exec_123453',
+      duration: '5.2s'
+    },
+    {
+      id: 5,
+      timestamp: '2024-01-15 10:10:18',
+      workflow: 'Onboarding Automático',
+      level: 'success',
+      message: 'Email de boas-vindas enviado para maria@email.com',
+      execution_id: 'exec_123452',
+      duration: '1.9s'
     }
-  ]);
+  ];
 
   const getLevelColor = (level: string) => {
     switch (level) {
+      case 'success': return 'bg-green-500';
       case 'error': return 'bg-red-500';
       case 'warning': return 'bg-yellow-500';
-      case 'success': return 'bg-green-500';
-      default: return 'bg-blue-500';
+      case 'info': return 'bg-blue-500';
+      default: return 'bg-gray-500';
     }
   };
 
   const getLevelLabel = (level: string) => {
     switch (level) {
+      case 'success': return 'Sucesso';
       case 'error': return 'Erro';
       case 'warning': return 'Aviso';
-      case 'success': return 'Sucesso';
-      default: return 'Info';
+      case 'info': return 'Info';
+      default: return level;
     }
   };
 
   const filteredLogs = logs.filter(log => {
     const matchesSearch = log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         log.workflowName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLevel = logLevel === 'all' || log.level === logLevel;
-    return matchesSearch && matchesLevel;
-  });
-
-  const handleExportLogs = () => {
-    const csvContent = filteredLogs.map(log => 
-      `${format(log.timestamp, 'yyyy-MM-dd HH:mm:ss')},${log.level},${log.workflowName},${log.message},${log.duration}ms`
-    ).join('\n');
+                         log.workflow.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesLevel = filterLevel === 'all' || log.level === filterLevel;
+    const matchesWorkflow = filterWorkflow === 'all' || log.workflow === filterWorkflow;
     
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `workflow-logs-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    link.click();
-  };
-
-  const handleRefresh = () => {
-    console.log('Atualizando logs...');
-    // Simular atualização
-  };
+    return matchesSearch && matchesLevel && matchesWorkflow;
+  });
 
   return (
     <Card className="w-full max-w-6xl">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Logs de Execução</CardTitle>
-          <Button variant="outline" onClick={onClose}>Fechar</Button>
+          <div>
+            <CardTitle>Logs dos Workflows</CardTitle>
+            <CardDescription>
+              Histórico detalhado de execuções e eventos
+            </CardDescription>
+          </div>
+          <Button variant="outline" onClick={onClose}>
+            Fechar
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex gap-4">
+        {/* Filtros */}
+        <div className="flex gap-4 items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -118,53 +120,79 @@ export const WorkflowLogs = ({ workflowId, onClose }: WorkflowLogsProps) => {
               className="pl-10"
             />
           </div>
-          <Select value={logLevel} onValueChange={setLogLevel}>
-            <SelectTrigger className="w-40">
-              <Filter className="w-4 h-4 mr-2" />
+          
+          <Select value={filterLevel} onValueChange={setFilterLevel}>
+            <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="info">Info</SelectItem>
               <SelectItem value="success">Sucesso</SelectItem>
-              <SelectItem value="warning">Aviso</SelectItem>
               <SelectItem value="error">Erro</SelectItem>
+              <SelectItem value="warning">Aviso</SelectItem>
+              <SelectItem value="info">Info</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={handleRefresh}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Atualizar
+
+          <Select value={filterWorkflow} onValueChange={setFilterWorkflow}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos Workflows</SelectItem>
+              <SelectItem value="Onboarding Automático">Onboarding Automático</SelectItem>
+              <SelectItem value="Suporte Inteligente">Suporte Inteligente</SelectItem>
+              <SelectItem value="Follow-up Vendas">Follow-up Vendas</SelectItem>
+              <SelectItem value="Processamento Pagamentos">Processamento Pagamentos</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button variant="outline" size="icon">
+            <RefreshCw className="w-4 h-4" />
           </Button>
-          <Button variant="outline" onClick={handleExportLogs}>
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
+
+          <Button variant="outline" size="icon">
+            <Download className="w-4 h-4" />
           </Button>
         </div>
 
-        <ScrollArea className="h-96 border rounded-lg">
-          <div className="p-4 space-y-2">
-            {filteredLogs.map((log) => (
-              <div key={log.id} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-                <Badge className={`${getLevelColor(log.level)} text-white`}>
-                  {getLevelLabel(log.level)}
-                </Badge>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{log.workflowName}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {format(log.timestamp, 'dd/MM/yyyy HH:mm:ss')}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{log.message}</p>
-                  <div className="flex gap-4 text-xs text-muted-foreground">
-                    <span>ID: {log.executionId}</span>
-                    <span>Duração: {log.duration}ms</span>
+        {/* Lista de Logs */}
+        <div className="space-y-2 max-h-96 overflow-y-auto">
+          {filteredLogs.map((log) => (
+            <div key={log.id} className="p-4 rounded-lg border border-border bg-background/50">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3 flex-1">
+                  <div className={`w-2 h-2 rounded-full ${getLevelColor(log.level)} mt-2`} />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-medium">{log.workflow}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {log.execution_id}
+                      </Badge>
+                      <Badge 
+                        variant={log.level === 'success' ? 'default' : log.level === 'error' ? 'destructive' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {getLevelLabel(log.level)}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-foreground">{log.message}</p>
+                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                      <span>{log.timestamp}</span>
+                      <span>Duração: {log.duration}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            ))}
+            </div>
+          ))}
+        </div>
+
+        {filteredLogs.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Nenhum log encontrado com os filtros aplicados.</p>
           </div>
-        </ScrollArea>
+        )}
       </CardContent>
     </Card>
   );

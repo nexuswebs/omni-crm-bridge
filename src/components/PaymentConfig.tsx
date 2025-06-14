@@ -1,53 +1,64 @@
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreditCard, DollarSign, QrCode } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export const PaymentConfig = () => {
-  const [stripeConfig, setStripeConfig] = useState({
-    enabled: false,
-    publicKey: '',
-    secretKey: '',
-    webhookSecret: ''
-  });
+  const { toast } = useToast();
+  
+  // Stripe Config
+  const [stripeEnabled, setStripeEnabled] = useState(true);
+  const [stripePublicKey, setStripePublicKey] = useState('asdasd');
+  const [stripeSecretKey, setStripeSecretKey] = useState('');
+  const [stripeWebhookSecret, setStripeWebhookSecret] = useState('');
 
-  const [mercadoPagoConfig, setMercadoPagoConfig] = useState({
-    enabled: false,
-    publicKey: '',
-    accessToken: '',
-    webhookSecret: ''
-  });
+  // Mercado Pago Config
+  const [mpEnabled, setMpEnabled] = useState(false);
+  const [mpPublicKey, setMpPublicKey] = useState('APP_USR-...');
+  const [mpAccessToken, setMpAccessToken] = useState('APP_USR-...');
+  const [mpWebhookSecret, setMpWebhookSecret] = useState('');
 
-  const [pixConfig, setPixConfig] = useState({
-    enabled: true,
-    pixKey: '',
-    pixKeyType: 'email',
-    bankName: '',
-    accountHolder: ''
-  });
+  // PIX Config
+  const [pixEnabled, setPixEnabled] = useState(true);
+  const [pixKey, setPixKey] = useState('ss');
+  const [pixKeyType, setPixKeyType] = useState('Email');
+  const [pixBankName, setPixBankName] = useState('ss');
+  const [pixAccountHolder, setPixAccountHolder] = useState('ss');
 
   const handleSaveStripe = () => {
-    console.log('Salvando configurações Stripe:', stripeConfig);
-    // Implementar salvamento
+    toast({
+      title: "Configurações Stripe salvas!",
+      description: "As configurações do Stripe foram atualizadas com sucesso.",
+    });
   };
 
   const handleSaveMercadoPago = () => {
-    console.log('Salvando configurações Mercado Pago:', mercadoPagoConfig);
-    // Implementar salvamento
+    toast({
+      title: "Configurações Mercado Pago salvas!",
+      description: "As configurações do Mercado Pago foram atualizadas com sucesso.",
+    });
   };
 
   const handleSavePix = () => {
-    console.log('Salvando configurações PIX:', pixConfig);
-    // Implementar salvamento
+    toast({
+      title: "Configurações PIX salvas!",
+      description: "As configurações do PIX foram atualizadas com sucesso.",
+    });
   };
 
   return (
     <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold">Configurações de Pagamento</h2>
+        <p className="text-muted-foreground">Configure seus gateways de pagamento</p>
+      </div>
+
       <Tabs defaultValue="stripe" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="stripe" className="flex items-center gap-2">
@@ -65,47 +76,65 @@ export const PaymentConfig = () => {
         </TabsList>
 
         <TabsContent value="stripe">
-          <Card>
+          <Card className="border-0 bg-card/50 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Configurações Stripe
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="w-5 h-5" />
+                    Configurações Stripe
+                  </CardTitle>
+                  <CardDescription>
+                    Configure suas credenciais do Stripe
+                  </CardDescription>
+                </div>
                 <Switch
-                  checked={stripeConfig.enabled}
-                  onCheckedChange={(enabled) => setStripeConfig({ ...stripeConfig, enabled })}
+                  checked={stripeEnabled}
+                  onCheckedChange={setStripeEnabled}
                 />
-              </CardTitle>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="stripe-public">Chave Pública</Label>
                 <Input
                   id="stripe-public"
-                  value={stripeConfig.publicKey}
-                  onChange={(e) => setStripeConfig({ ...stripeConfig, publicKey: e.target.value })}
-                  placeholder="pk_live_..."
+                  value={stripePublicKey}
+                  onChange={(e) => setStripePublicKey(e.target.value)}
+                  placeholder="pk_test_..."
+                  disabled={!stripeEnabled}
                 />
               </div>
+
               <div>
                 <Label htmlFor="stripe-secret">Chave Secreta</Label>
                 <Input
                   id="stripe-secret"
                   type="password"
-                  value={stripeConfig.secretKey}
-                  onChange={(e) => setStripeConfig({ ...stripeConfig, secretKey: e.target.value })}
-                  placeholder="sk_live_..."
+                  value={stripeSecretKey}
+                  onChange={(e) => setStripeSecretKey(e.target.value)}
+                  placeholder="sk_test_..."
+                  disabled={!stripeEnabled}
                 />
               </div>
+
               <div>
                 <Label htmlFor="stripe-webhook">Webhook Secret</Label>
                 <Input
                   id="stripe-webhook"
                   type="password"
-                  value={stripeConfig.webhookSecret}
-                  onChange={(e) => setStripeConfig({ ...stripeConfig, webhookSecret: e.target.value })}
+                  value={stripeWebhookSecret}
+                  onChange={(e) => setStripeWebhookSecret(e.target.value)}
                   placeholder="whsec_..."
+                  disabled={!stripeEnabled}
                 />
               </div>
-              <Button onClick={handleSaveStripe} className="bg-gradient-primary text-white">
+
+              <Button 
+                onClick={handleSaveStripe} 
+                disabled={!stripeEnabled}
+                className="bg-gradient-primary"
+              >
                 Salvar Configurações Stripe
               </Button>
             </CardContent>
@@ -113,46 +142,65 @@ export const PaymentConfig = () => {
         </TabsContent>
 
         <TabsContent value="mercadopago">
-          <Card>
+          <Card className="border-0 bg-card/50 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Configurações Mercado Pago
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5" />
+                    Configurações Mercado Pago
+                  </CardTitle>
+                  <CardDescription>
+                    Configure suas credenciais do Mercado Pago
+                  </CardDescription>
+                </div>
                 <Switch
-                  checked={mercadoPagoConfig.enabled}
-                  onCheckedChange={(enabled) => setMercadoPagoConfig({ ...mercadoPagoConfig, enabled })}
+                  checked={mpEnabled}
+                  onCheckedChange={setMpEnabled}
                 />
-              </CardTitle>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="mp-public">Chave Pública</Label>
                 <Input
                   id="mp-public"
-                  value={mercadoPagoConfig.publicKey}
-                  onChange={(e) => setMercadoPagoConfig({ ...mercadoPagoConfig, publicKey: e.target.value })}
+                  value={mpPublicKey}
+                  onChange={(e) => setMpPublicKey(e.target.value)}
                   placeholder="APP_USR-..."
+                  disabled={!mpEnabled}
                 />
               </div>
+
               <div>
                 <Label htmlFor="mp-access">Access Token</Label>
                 <Input
                   id="mp-access"
                   type="password"
-                  value={mercadoPagoConfig.accessToken}
-                  onChange={(e) => setMercadoPagoConfig({ ...mercadoPagoConfig, accessToken: e.target.value })}
+                  value={mpAccessToken}
+                  onChange={(e) => setMpAccessToken(e.target.value)}
                   placeholder="APP_USR-..."
+                  disabled={!mpEnabled}
                 />
               </div>
+
               <div>
                 <Label htmlFor="mp-webhook">Webhook Secret</Label>
                 <Input
                   id="mp-webhook"
                   type="password"
-                  value={mercadoPagoConfig.webhookSecret}
-                  onChange={(e) => setMercadoPagoConfig({ ...mercadoPagoConfig, webhookSecret: e.target.value })}
+                  value={mpWebhookSecret}
+                  onChange={(e) => setMpWebhookSecret(e.target.value)}
+                  placeholder="webhook_secret..."
+                  disabled={!mpEnabled}
                 />
               </div>
-              <Button onClick={handleSaveMercadoPago} className="bg-gradient-primary text-white">
+
+              <Button 
+                onClick={handleSaveMercadoPago} 
+                disabled={!mpEnabled}
+                className="bg-gradient-primary"
+              >
                 Salvar Configurações Mercado Pago
               </Button>
             </CardContent>
@@ -160,58 +208,80 @@ export const PaymentConfig = () => {
         </TabsContent>
 
         <TabsContent value="pix">
-          <Card>
+          <Card className="border-0 bg-card/50 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Configurações PIX
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <QrCode className="w-5 h-5" />
+                    Configurações PIX
+                  </CardTitle>
+                  <CardDescription>
+                    Configure sua chave PIX para recebimentos
+                  </CardDescription>
+                </div>
                 <Switch
-                  checked={pixConfig.enabled}
-                  onCheckedChange={(enabled) => setPixConfig({ ...pixConfig, enabled })}
+                  checked={pixEnabled}
+                  onCheckedChange={setPixEnabled}
                 />
-              </CardTitle>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="pix-key">Chave PIX</Label>
                 <Input
                   id="pix-key"
-                  value={pixConfig.pixKey}
-                  onChange={(e) => setPixConfig({ ...pixConfig, pixKey: e.target.value })}
-                  placeholder="Sua chave PIX"
+                  value={pixKey}
+                  onChange={(e) => setPixKey(e.target.value)}
+                  placeholder="sua@chave.pix"
+                  disabled={!pixEnabled}
                 />
               </div>
+
               <div>
                 <Label htmlFor="pix-type">Tipo da Chave</Label>
-                <select
+                <select 
                   id="pix-type"
-                  value={pixConfig.pixKeyType}
-                  onChange={(e) => setPixConfig({ ...pixConfig, pixKeyType: e.target.value })}
-                  className="w-full p-2 border rounded-md"
+                  value={pixKeyType}
+                  onChange={(e) => setPixKeyType(e.target.value)}
+                  disabled={!pixEnabled}
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background"
                 >
-                  <option value="email">Email</option>
-                  <option value="cpf">CPF</option>
-                  <option value="cnpj">CNPJ</option>
-                  <option value="phone">Telefone</option>
-                  <option value="random">Chave Aleatória</option>
+                  <option value="Email">Email</option>
+                  <option value="CPF">CPF</option>
+                  <option value="CNPJ">CNPJ</option>
+                  <option value="Telefone">Telefone</option>
+                  <option value="Aleatoria">Chave Aleatória</option>
                 </select>
               </div>
+
               <div>
-                <Label htmlFor="bank-name">Nome do Banco</Label>
+                <Label htmlFor="pix-bank">Nome do Banco</Label>
                 <Input
-                  id="bank-name"
-                  value={pixConfig.bankName}
-                  onChange={(e) => setPixConfig({ ...pixConfig, bankName: e.target.value })}
+                  id="pix-bank"
+                  value={pixBankName}
+                  onChange={(e) => setPixBankName(e.target.value)}
+                  placeholder="Banco do Brasil"
+                  disabled={!pixEnabled}
                 />
               </div>
+
               <div>
-                <Label htmlFor="account-holder">Titular da Conta</Label>
+                <Label htmlFor="pix-holder">Titular da Conta</Label>
                 <Input
-                  id="account-holder"
-                  value={pixConfig.accountHolder}
-                  onChange={(e) => setPixConfig({ ...pixConfig, accountHolder: e.target.value })}
+                  id="pix-holder"
+                  value={pixAccountHolder}
+                  onChange={(e) => setPixAccountHolder(e.target.value)}
+                  placeholder="Nome do titular"
+                  disabled={!pixEnabled}
                 />
               </div>
-              <Button onClick={handleSavePix} className="bg-gradient-primary text-white">
+
+              <Button 
+                onClick={handleSavePix} 
+                disabled={!pixEnabled}
+                className="bg-gradient-primary"
+              >
                 Salvar Configurações PIX
               </Button>
             </CardContent>

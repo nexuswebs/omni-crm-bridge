@@ -1,134 +1,102 @@
 
-import { NavLink, useLocation } from 'react-router-dom';
+import { Home, Users, Zap, Bot, CreditCard, MessageSquare, Settings, LogOut } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
-  useSidebar,
+  SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 const menuItems = [
   {
     title: 'Dashboard',
     url: '/',
-    icon: '📊',
-    badge: null
+    icon: Home,
   },
   {
     title: 'Clientes',
     url: '/customers',
-    icon: '👥',
-    badge: '1.2k'
+    icon: Users,
   },
   {
     title: 'Workflows',
     url: '/workflows',
-    icon: '⚡',
-    badge: 'n8n'
+    icon: Zap,
   },
   {
     title: 'Agentes',
     url: '/agents',
-    icon: '🤖',
-    badge: 'IA'
+    icon: Bot,
   },
   {
     title: 'WhatsApp',
     url: '/whatsapp',
-    icon: '💬',
-    badge: 'API'
+    icon: MessageSquare,
   },
   {
     title: 'Pagamentos',
     url: '/payments',
-    icon: '💳',
-    badge: null
+    icon: CreditCard,
   },
   {
     title: 'Configurações',
     url: '/settings',
-    icon: '⚙️',
-    badge: null
-  }
+    icon: Settings,
+  },
 ];
 
-export function AppSidebar() {
-  const { collapsed } = useSidebar();
+export const AppSidebar = () => {
   const location = useLocation();
-  const currentPath = location.pathname;
-
-  const isActive = (path: string) => {
-    if (path === '/') {
-      return currentPath === '/';
-    }
-    return currentPath.startsWith(path);
-  };
+  const { logout } = useAuth();
 
   return (
-    <Sidebar className={`${collapsed ? 'w-16' : 'w-64'} border-r border-sidebar-border bg-sidebar`} collapsible>
-      <div className="p-4">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center text-white font-bold text-sm">
-            CRM
+    <Sidebar>
+      <SidebarHeader className="p-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
+            <span className="text-white font-bold text-sm">CRM</span>
           </div>
-          {!collapsed && (
-            <div>
-              <h1 className="text-lg font-bold text-sidebar-foreground">SmartCRM</h1>
-              <p className="text-xs text-sidebar-foreground/70">Sistema Inteligente</p>
-            </div>
-          )}
+          <div>
+            <h2 className="font-bold text-lg">CRM Inteligente</h2>
+            <p className="text-xs text-muted-foreground">n8n + IA</p>
+          </div>
         </div>
-      </div>
-
-      <SidebarContent className="px-2">
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/70 font-medium">
-            {!collapsed && 'Menu Principal'}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === '/'}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
-                        isActive(item.url)
-                          ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm'
-                          : 'hover:bg-sidebar-accent/50 text-sidebar-foreground hover:text-sidebar-accent-foreground'
-                      }`}
-                    >
-                      <span className="text-lg">{item.icon}</span>
-                      {!collapsed && (
-                        <>
-                          <span className="flex-1">{item.title}</span>
-                          {item.badge && (
-                            <Badge variant="secondary" className="text-xs">
-                              {item.badge}
-                            </Badge>
-                          )}
-                        </>
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      </SidebarHeader>
+      
+      <SidebarContent>
+        <SidebarMenu>
+          {menuItems.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton
+                asChild
+                isActive={location.pathname === item.url}
+              >
+                <Link to={item.url} className="flex items-center gap-3">
+                  <item.icon className="w-5 h-5" />
+                  <span>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
       </SidebarContent>
-
-      <div className="p-2">
-        <SidebarTrigger className="w-full" />
-      </div>
+      
+      <SidebarFooter className="p-4">
+        <Button
+          variant="ghost"
+          onClick={logout}
+          className="w-full justify-start gap-3"
+        >
+          <LogOut className="w-5 h-5" />
+          Sair
+        </Button>
+      </SidebarFooter>
     </Sidebar>
   );
-}
+};
