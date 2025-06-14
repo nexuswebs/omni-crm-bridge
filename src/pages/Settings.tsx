@@ -235,37 +235,124 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="database">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configurações do Banco de Dados</CardTitle>
-              <CardDescription>Backup e manutenção dos dados</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 border rounded-lg text-center">
-                  <h3 className="font-semibold">Último Backup</h3>
-                  <p className="text-sm text-muted-foreground">15/01/2024 às 03:00</p>
-                  <Button size="sm" className="mt-2" variant="outline">Fazer Backup</Button>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configuração da Conexão</CardTitle>
+                <CardDescription>Configure a conexão com o banco de dados</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="db-type">Tipo de Banco</Label>
+                  <select id="db-type" className="w-full p-2 border rounded-md" defaultValue="mysql">
+                    <option value="mysql">MySQL</option>
+                    <option value="postgresql">PostgreSQL</option>
+                    <option value="sqlite">SQLite</option>
+                    <option value="mongodb">MongoDB</option>
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="db-host">Host</Label>
+                  <Input id="db-host" placeholder="localhost" defaultValue="localhost" />
+                </div>
+                <div>
+                  <Label htmlFor="db-port">Porta</Label>
+                  <Input id="db-port" type="number" placeholder="3306" defaultValue="3306" />
+                </div>
+                <div>
+                  <Label htmlFor="db-name">Nome do Banco</Label>
+                  <Input id="db-name" placeholder="crm_database" />
+                </div>
+                <div>
+                  <Label htmlFor="db-user">Usuário</Label>
+                  <Input id="db-user" placeholder="root" />
+                </div>
+                <div>
+                  <Label htmlFor="db-password">Senha</Label>
+                  <Input id="db-password" type="password" placeholder="••••••••" />
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1">Testar Conexão</Button>
+                  <Button className="bg-gradient-primary text-white flex-1">Salvar</Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Status e Manutenção</CardTitle>
+                <CardDescription>Backup e manutenção dos dados</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 border rounded-lg text-center">
+                    <h3 className="font-semibold">Status da Conexão</h3>
+                    <div className="flex items-center justify-center gap-2 mt-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500" />
+                      <span className="text-sm text-green-600">Conectado</span>
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg text-center">
+                    <h3 className="font-semibold">Último Backup</h3>
+                    <p className="text-sm text-muted-foreground">15/01/2024 às 03:00</p>
+                    <Button size="sm" className="mt-2" variant="outline">Fazer Backup</Button>
+                  </div>
                 </div>
                 <div className="p-4 border rounded-lg text-center">
                   <h3 className="font-semibold">Tamanho do Banco</h3>
                   <p className="text-sm text-muted-foreground">2.4 GB</p>
                   <Button size="sm" className="mt-2" variant="outline">Otimizar</Button>
                 </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="auto-backup">Backup Automático (Diário às 3h)</Label>
-                <Switch id="auto-backup" defaultChecked />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="compression">Compressão de Dados</Label>
-                <Switch id="compression" defaultChecked />
-              </div>
-              <Button className="bg-gradient-primary text-white w-full">
-                Executar Limpeza de Dados Antigos
-              </Button>
-            </CardContent>
-          </Card>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="auto-backup">Backup Automático (Diário às 3h)</Label>
+                  <Switch id="auto-backup" defaultChecked />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="compression">Compressão de Dados</Label>
+                  <Switch id="compression" defaultChecked />
+                </div>
+                <Button className="bg-gradient-primary text-white w-full">
+                  Executar Limpeza de Dados Antigos
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Configurações Avançadas</CardTitle>
+                <CardDescription>Parâmetros avançados de conexão</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="max-connections">Máximo de Conexões</Label>
+                    <Input id="max-connections" type="number" defaultValue="100" />
+                  </div>
+                  <div>
+                    <Label htmlFor="connection-timeout">Timeout da Conexão (ms)</Label>
+                    <Input id="connection-timeout" type="number" defaultValue="30000" />
+                  </div>
+                  <div>
+                    <Label htmlFor="charset">Charset</Label>
+                    <Input id="charset" defaultValue="utf8mb4" />
+                  </div>
+                  <div>
+                    <Label htmlFor="timezone">Timezone</Label>
+                    <Input id="timezone" defaultValue="America/Sao_Paulo" />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="ssl-enabled">Habilitar SSL</Label>
+                  <Switch id="ssl-enabled" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="debug-mode">Modo Debug</Label>
+                  <Switch id="debug-mode" />
+                </div>
+                <Button className="bg-gradient-primary text-white">Aplicar Configurações</Button>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
