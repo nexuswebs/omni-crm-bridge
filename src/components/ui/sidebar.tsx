@@ -72,6 +72,30 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
 )
 Sidebar.displayName = "Sidebar"
 
+const SidebarHeader = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex items-center justify-between p-4 border-b", className)}
+    {...props}
+  />
+))
+SidebarHeader.displayName = "SidebarHeader"
+
+const SidebarFooter = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("mt-auto border-t p-4", className)}
+    {...props}
+  />
+))
+SidebarFooter.displayName = "SidebarFooter"
+
 const SidebarContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -141,8 +165,9 @@ const SidebarMenuButton = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & {
     asChild?: boolean
+    isActive?: boolean
   }
->(({ className, asChild = false, ...props }, ref) => {
+>(({ className, asChild = false, isActive = false, ...props }, ref) => {
   const Comp = asChild ? React.Fragment : "button"
   
   if (asChild) {
@@ -154,6 +179,7 @@ const SidebarMenuButton = React.forwardRef<
       ref={ref}
       className={cn(
         "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50",
+        isActive && "bg-accent text-accent-foreground",
         className
       )}
       {...props}
@@ -186,6 +212,8 @@ SidebarTrigger.displayName = "SidebarTrigger"
 
 export {
   Sidebar,
+  SidebarHeader,
+  SidebarFooter,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
