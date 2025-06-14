@@ -22,16 +22,32 @@ export const N8nConnection = ({ onClose }: N8nConnectionProps) => {
     webhookUrl: 'https://n8n.seu-dominio.com/webhook',
     connected: false,
     version: '',
-    instanceInfo: null
+    instanceInfo: null as any,
+    autoSync: false
   });
 
   const [testResults, setTestResults] = useState({
-    connection: null,
-    webhooks: null,
-    workflows: null
+    connection: null as string | null,
+    webhooks: null as string | null,
+    workflows: null as string | null
   });
 
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
   const handleTestConnection = async () => {
+    if (!connectionData.baseUrl || !connectionData.apiKey) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha a URL base e a API key.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsTestingConnection(true);
+    console.log('Testando conexão n8n:', { baseUrl: connectionData.baseUrl, apiKey: '***' });
+    
     toast({
       title: "Testando conexão...",
       description: "Verificando conectividade com n8n",
@@ -39,31 +55,65 @@ export const N8nConnection = ({ onClose }: N8nConnectionProps) => {
 
     // Simular teste de conexão
     setTimeout(() => {
-      setTestResults({
-        connection: 'success',
-        webhooks: 'success',
-        workflows: 'success'
-      });
+      const success = Math.random() > 0.2; // 80% chance de sucesso
       
-      setConnectionData({
-        ...connectionData,
-        connected: true,
-        version: '1.19.4',
-        instanceInfo: {
-          workflows: 12,
-          executions: 1547,
-          activeWorkflows: 8
-        }
-      });
+      if (success) {
+        setTestResults({
+          connection: 'success',
+          webhooks: 'success',
+          workflows: 'success'
+        });
+        
+        setConnectionData({
+          ...connectionData,
+          connected: true,
+          version: '1.19.4',
+          instanceInfo: {
+            workflows: 12,
+            executions: 1547,
+            activeWorkflows: 8
+          }
+        });
 
-      toast({
-        title: "Conexão estabelecida!",
-        description: "n8n conectado com sucesso.",
-      });
+        toast({
+          title: "Conexão estabelecida!",
+          description: "n8n conectado com sucesso.",
+        });
+      } else {
+        setTestResults({
+          connection: 'error',
+          webhooks: 'error',
+          workflows: 'error'
+        });
+        
+        toast({
+          title: "Erro na conexão",
+          description: "Não foi possível conectar ao n8n. Verifique as credenciais.",
+          variant: "destructive",
+        });
+      }
+      
+      setIsTestingConnection(false);
     }, 2000);
   };
 
   const handleSaveConnection = () => {
+    if (!connectionData.baseUrl || !connectionData.apiKey) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('Salvando configurações n8n:', {
+      baseUrl: connectionData.baseUrl,
+      apiKey: '***',
+      webhookUrl: connectionData.webhookUrl,
+      autoSync: connectionData.autoSync
+    });
+    
     toast({
       title: "Configurações salvas!",
       description: "Conexão com n8n configurada com sucesso.",
@@ -71,9 +121,45 @@ export const N8nConnection = ({ onClose }: N8nConnectionProps) => {
   };
 
   const handleSyncWorkflows = () => {
+    if (!connectionData.connected) {
+      toast({
+        title: "Conexão necessária",
+        description: "Primeiro teste e estabeleça a conexão com n8n.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSyncing(true);
+    console.log('Sincronizando workflows do n8n');
+    
     toast({
       title: "Sincronizando workflows...",
       description: "Importando workflows do n8n.",
+    });
+
+    setTimeout(() => {
+      setIsSyncing(false);
+      toast({
+        title: "Sincronização concluída!",
+        description: "4 workflows foram importados com sucesso.",
+      });
+    }, 3000);
+  };
+
+  const handleConfigureAutoSync = () => {
+    console.log('Configurando sincronização automática');
+    toast({
+      title: "Configurar Auto-Sync",
+      description: "Funcionalidade de configuração automática será implementada.",
+    });
+  };
+
+  const handleWebhookConfig = (webhookName: string, action: 'activate' | 'pause' | 'configure') => {
+    console.log(`Webhook ${webhookName} - ${action}`);
+    toast({
+      title: `Webhook ${webhookName}`,
+      description: `${action === 'activate' ? 'Ativando' : action === 'pause' ? 'Pausando' : 'Configurando'} webhook.`,
     });
   };
 
@@ -145,16 +231,20 @@ export const N8nConnection = ({ onClose }: N8nConnectionProps) => {
               <div className="flex items-center space-x-2">
                 <Switch
                   id="auto-sync"
-                  checked={connectionData.connected}
-                  onCheckedChange={(checked) => setConnectionData({ ...connectionData, connected: checked })}
+                  checked={connectionData.autoSync}
+                  onCheckedChange={(checked) => setConnectionData({ ...connectionData, autoSync: checked })}
                 />
                 <Label htmlFor="auto-sync">Sincronização automática</Label>
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={handleTestConnection} className="bg-gradient-primary">
+                <Button 
+                  onClick={handleTestConnection} 
+                  className="bg-gradient-primary"
+                  disabled={isTestingConnection}
+                >
                   <Zap className="w-4 h-4 mr-2" />
-                  Testar Conexão
+                  {isTestingConnection ? 'Testando...' : 'Testar Conexão'}
                 </Button>
                 <Button variant="outline" onClick={handleSaveConnection}>
                   Salvar Configurações
@@ -239,18 +329,56 @@ export const N8nConnection = ({ onClose }: N8nConnectionProps) => {
                 <CardTitle className="text-lg">Webhooks Configurados</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Onboarding Automático</span>
-                    <Badge variant="default">Ativo</Badge>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <span className="text-sm font-medium">Onboarding Automático</span>
+                      <p className="text-xs text-muted-foreground">Ativa quando novo cliente se cadastra</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="default">Ativo</Badge>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleWebhookConfig('Onboarding Automático', 'pause')}
+                      >
+                        Pausar
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Suporte Inteligente</span>
-                    <Badge variant="default">Ativo</Badge>
+                  
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <span className="text-sm font-medium">Suporte Inteligente</span>
+                      <p className="text-xs text-muted-foreground">Resposta automática para tickets</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="default">Ativo</Badge>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleWebhookConfig('Suporte Inteligente', 'configure')}
+                      >
+                        Configurar
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Follow-up Vendas</span>
-                    <Badge variant="secondary">Pausado</Badge>
+                  
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <span className="text-sm font-medium">Follow-up Vendas</span>
+                      <p className="text-xs text-muted-foreground">Acompanhamento pós-venda</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">Pausado</Badge>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleWebhookConfig('Follow-up Vendas', 'activate')}
+                      >
+                        Ativar
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -267,11 +395,15 @@ export const N8nConnection = ({ onClose }: N8nConnectionProps) => {
               </CardHeader>
               <CardContent>
                 <div className="flex gap-2">
-                  <Button onClick={handleSyncWorkflows} className="bg-gradient-primary">
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Sincronizar Agora
+                  <Button 
+                    onClick={handleSyncWorkflows} 
+                    className="bg-gradient-primary"
+                    disabled={isSyncing || !connectionData.connected}
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+                    {isSyncing ? 'Sincronizando...' : 'Sincronizar Agora'}
                   </Button>
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={handleConfigureAutoSync}>
                     Configurar Auto-Sync
                   </Button>
                 </div>

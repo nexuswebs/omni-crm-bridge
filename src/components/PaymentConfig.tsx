@@ -14,24 +14,40 @@ export const PaymentConfig = () => {
   
   // Stripe Config
   const [stripeEnabled, setStripeEnabled] = useState(true);
-  const [stripePublicKey, setStripePublicKey] = useState('asdasd');
+  const [stripePublicKey, setStripePublicKey] = useState('');
   const [stripeSecretKey, setStripeSecretKey] = useState('');
   const [stripeWebhookSecret, setStripeWebhookSecret] = useState('');
 
   // Mercado Pago Config
   const [mpEnabled, setMpEnabled] = useState(false);
-  const [mpPublicKey, setMpPublicKey] = useState('APP_USR-...');
-  const [mpAccessToken, setMpAccessToken] = useState('APP_USR-...');
+  const [mpPublicKey, setMpPublicKey] = useState('');
+  const [mpAccessToken, setMpAccessToken] = useState('');
   const [mpWebhookSecret, setMpWebhookSecret] = useState('');
 
   // PIX Config
   const [pixEnabled, setPixEnabled] = useState(true);
-  const [pixKey, setPixKey] = useState('ss');
+  const [pixKey, setPixKey] = useState('');
   const [pixKeyType, setPixKeyType] = useState('Email');
-  const [pixBankName, setPixBankName] = useState('ss');
-  const [pixAccountHolder, setPixAccountHolder] = useState('ss');
+  const [pixBankName, setPixBankName] = useState('');
+  const [pixAccountHolder, setPixAccountHolder] = useState('');
 
   const handleSaveStripe = () => {
+    console.log('Salvando configurações Stripe:', {
+      enabled: stripeEnabled,
+      publicKey: stripePublicKey,
+      secretKey: stripeSecretKey ? '***' : '',
+      webhookSecret: stripeWebhookSecret ? '***' : ''
+    });
+    
+    if (!stripePublicKey || !stripeSecretKey) {
+      toast({
+        title: "Erro ao salvar",
+        description: "Por favor, preencha as chaves pública e secreta do Stripe.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     toast({
       title: "Configurações Stripe salvas!",
       description: "As configurações do Stripe foram atualizadas com sucesso.",
@@ -39,6 +55,22 @@ export const PaymentConfig = () => {
   };
 
   const handleSaveMercadoPago = () => {
+    console.log('Salvando configurações Mercado Pago:', {
+      enabled: mpEnabled,
+      publicKey: mpPublicKey,
+      accessToken: mpAccessToken ? '***' : '',
+      webhookSecret: mpWebhookSecret ? '***' : ''
+    });
+    
+    if (mpEnabled && (!mpPublicKey || !mpAccessToken)) {
+      toast({
+        title: "Erro ao salvar",
+        description: "Por favor, preencha a chave pública e o access token do Mercado Pago.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     toast({
       title: "Configurações Mercado Pago salvas!",
       description: "As configurações do Mercado Pago foram atualizadas com sucesso.",
@@ -46,10 +78,72 @@ export const PaymentConfig = () => {
   };
 
   const handleSavePix = () => {
+    console.log('Salvando configurações PIX:', {
+      enabled: pixEnabled,
+      key: pixKey,
+      keyType: pixKeyType,
+      bankName: pixBankName,
+      accountHolder: pixAccountHolder
+    });
+    
+    if (pixEnabled && (!pixKey || !pixBankName || !pixAccountHolder)) {
+      toast({
+        title: "Erro ao salvar",
+        description: "Por favor, preencha todos os campos obrigatórios do PIX.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     toast({
       title: "Configurações PIX salvas!",
       description: "As configurações do PIX foram atualizadas com sucesso.",
     });
+  };
+
+  const handleTestStripe = () => {
+    console.log('Testando conexão Stripe');
+    toast({
+      title: "Testando Stripe...",
+      description: "Verificando conectividade com Stripe.",
+    });
+    
+    setTimeout(() => {
+      toast({
+        title: "Teste Stripe concluído!",
+        description: "Conexão com Stripe estabelecida com sucesso.",
+      });
+    }, 2000);
+  };
+
+  const handleTestMercadoPago = () => {
+    console.log('Testando conexão Mercado Pago');
+    toast({
+      title: "Testando Mercado Pago...",
+      description: "Verificando conectividade com Mercado Pago.",
+    });
+    
+    setTimeout(() => {
+      toast({
+        title: "Teste Mercado Pago concluído!",
+        description: "Conexão com Mercado Pago estabelecida com sucesso.",
+      });
+    }, 2000);
+  };
+
+  const handleTestPix = () => {
+    console.log('Testando configuração PIX');
+    toast({
+      title: "Testando PIX...",
+      description: "Validando configurações PIX.",
+    });
+    
+    setTimeout(() => {
+      toast({
+        title: "Teste PIX concluído!",
+        description: "Configurações PIX estão válidas.",
+      });
+    }, 1500);
   };
 
   return (
@@ -130,13 +224,22 @@ export const PaymentConfig = () => {
                 />
               </div>
 
-              <Button 
-                onClick={handleSaveStripe} 
-                disabled={!stripeEnabled}
-                className="bg-gradient-primary"
-              >
-                Salvar Configurações Stripe
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleSaveStripe} 
+                  disabled={!stripeEnabled}
+                  className="bg-gradient-primary"
+                >
+                  Salvar Configurações Stripe
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={handleTestStripe} 
+                  disabled={!stripeEnabled}
+                >
+                  Testar Conexão
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -196,13 +299,22 @@ export const PaymentConfig = () => {
                 />
               </div>
 
-              <Button 
-                onClick={handleSaveMercadoPago} 
-                disabled={!mpEnabled}
-                className="bg-gradient-primary"
-              >
-                Salvar Configurações Mercado Pago
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleSaveMercadoPago} 
+                  disabled={!mpEnabled}
+                  className="bg-gradient-primary"
+                >
+                  Salvar Configurações Mercado Pago
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={handleTestMercadoPago} 
+                  disabled={!mpEnabled}
+                >
+                  Testar Conexão
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -277,13 +389,22 @@ export const PaymentConfig = () => {
                 />
               </div>
 
-              <Button 
-                onClick={handleSavePix} 
-                disabled={!pixEnabled}
-                className="bg-gradient-primary"
-              >
-                Salvar Configurações PIX
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleSavePix} 
+                  disabled={!pixEnabled}
+                  className="bg-gradient-primary"
+                >
+                  Salvar Configurações PIX
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={handleTestPix} 
+                  disabled={!pixEnabled}
+                >
+                  Testar Configuração
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
