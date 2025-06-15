@@ -9,8 +9,6 @@ interface CreateInstanceRequest {
   integration?: string;
   qrcode?: boolean;
   webhook?: string;
-  webhook_by_events?: boolean;
-  webhook_base64?: boolean;
   events?: string[];
 }
 
@@ -54,36 +52,18 @@ export class EvolutionApiService {
   }
 
   async createInstance(instanceName: string, webhook?: string): Promise<InstanceResponse> {
-    // Seguindo a documentação oficial da Evolution API
+    // Payload simplificado conforme documentação oficial
     const payload: CreateInstanceRequest = {
       instanceName,
       integration: 'WHATSAPP-BAILEYS',
       qrcode: true,
       webhook: webhook || 'https://webhook.site/unique-id',
-      webhook_by_events: false,
-      webhook_base64: false,
       events: [
         'APPLICATION_STARTUP',
         'QRCODE_UPDATED', 
         'CONNECTION_UPDATE',
         'MESSAGES_UPSERT',
-        'MESSAGES_UPDATE',
-        'MESSAGES_DELETE',
-        'SEND_MESSAGE',
-        'CONTACTS_SET',
-        'CONTACTS_UPSERT',
-        'CONTACTS_UPDATE',
-        'PRESENCE_UPDATE',
-        'CHATS_SET',
-        'CHATS_UPSERT',
-        'CHATS_UPDATE',
-        'CHATS_DELETE',
-        'GROUPS_UPSERT',
-        'GROUP_UPDATE',
-        'GROUP_PARTICIPANTS_UPDATE',
-        'LABELS_EDIT',
-        'LABELS_ASSOCIATION',
-        'CALL_UPSERT'
+        'SEND_MESSAGE'
       ]
     };
 
@@ -148,25 +128,6 @@ export class EvolutionApiService {
     return data;
   }
 
-  async getInstanceInfo(instanceName: string): Promise<any> {
-    const response = await fetch(`${this.config.baseUrl}/instance/fetchInstances?instanceName=${instanceName}`, {
-      method: 'GET',
-      headers: {
-        'apikey': this.config.apiKey
-      }
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Erro ao buscar informações da instância:', response.status, errorText);
-      throw new Error(`Erro ao buscar informações: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log('Informações da instância:', data);
-    return data;
-  }
-
   async getInstanceStatus(instanceName: string): Promise<any> {
     const response = await fetch(`${this.config.baseUrl}/instance/connectionState/${instanceName}`, {
       method: 'GET',
@@ -206,7 +167,6 @@ export class EvolutionApiService {
   }
 
   async sendMessage(instanceName: string, number: string, message: string): Promise<any> {
-    // Seguindo a documentação para envio de mensagens
     const payload = {
       number: number,
       options: {

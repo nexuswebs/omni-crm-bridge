@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,9 +28,9 @@ export const N8nConnection = ({ onClose }: N8nConnectionProps) => {
       }
     }
     return {
-      baseUrl: 'https://n8n.seu-dominio.com',
+      baseUrl: 'https://n8.redenexus.top',
       apiKey: '',
-      webhookUrl: 'https://n8n.seu-dominio.com/webhook',
+      webhookUrl: 'https://n8.redenexus.top/webhook',
       connected: false,
       version: '',
       instanceInfo: null as any,
@@ -70,14 +71,26 @@ export const N8nConnection = ({ onClose }: N8nConnectionProps) => {
     });
 
     try {
-      // Teste real da API do n8n
-      const response = await fetch(`${connectionData.baseUrl}/rest/workflows`, {
+      // Primeiro tenta o endpoint padrão do n8n
+      let response = await fetch(`${connectionData.baseUrl}/api/v1/workflows`, {
         method: 'GET',
         headers: {
           'X-N8N-API-KEY': connectionData.apiKey,
           'Content-Type': 'application/json',
         }
       });
+
+      // Se falhar, tenta endpoint alternativo
+      if (!response.ok) {
+        console.log('Tentando endpoint alternativo...');
+        response = await fetch(`${connectionData.baseUrl}/rest/workflows`, {
+          method: 'GET',
+          headers: {
+            'X-N8N-API-KEY': connectionData.apiKey,
+            'Content-Type': 'application/json',
+          }
+        });
+      }
 
       if (response.ok) {
         const workflows = await response.json();
@@ -117,7 +130,7 @@ export const N8nConnection = ({ onClose }: N8nConnectionProps) => {
       
       toast({
         title: "Erro na conexão",
-        description: error instanceof Error ? error.message : "Erro desconhecido ao conectar com n8n.",
+        description: "Verifique a URL base e API key. Certifique-se de que o n8n está rodando e acessível.",
         variant: "destructive",
       });
     } finally {
