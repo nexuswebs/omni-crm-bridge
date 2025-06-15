@@ -62,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 id: session.user.id,
                 name: profile.name || session.user.email?.split('@')[0] || 'Usuário',
                 email: session.user.email || '',
-                role: profile.role || 'user'
+                role: (profile.role as 'admin' | 'agent' | 'user') || 'user'
               });
             }
           }, 0);
@@ -86,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               id: session.user.id,
               name: profile.name || session.user.email?.split('@')[0] || 'Usuário',
               email: session.user.email || '',
-              role: profile.role || 'user'
+              role: (profile.role as 'admin' | 'agent' | 'user') || 'user'
             });
           }
           setIsLoading(false);
