@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,7 @@ interface WhatsAppInstanceCardProps {
   onDisconnect: (instanceId: string) => void;
   onDelete: (instanceId: string) => void;
   onConfigure: (instance: WhatsAppInstance) => void;
-  onSendTestMessage: (instanceId: string, phone: string, message: string) => void;
+  onSendTestMessage: (instanceId: string, phone: string, message: string) => Promise<boolean>;
   isLoading: boolean;
 }
 
@@ -41,14 +40,18 @@ export const WhatsAppInstanceCard = ({
   const [testPhone, setTestPhone] = useState('');
 
   const handleSendTest = async () => {
-    const success = await onSendTestMessage(instance.id, testPhone, testMessage);
-    if (success) {
-      setTestMessage('');
-      setTestPhone('');
+    try {
+      const success = await onSendTestMessage(instance.id, testPhone, testMessage);
+      if (success) {
+        setTestMessage('');
+        setTestPhone('');
+      }
+    } catch (error) {
+      console.error('Error sending test message:', error);
     }
   };
 
-  const getStatusBadge = (status: WhatsAppInstance['status']) => {
+  function getStatusBadge(status: WhatsAppInstance['status']) {
     switch (status) {
       case 'connected':
         return <Badge className="bg-green-500">Conectado</Badge>;
@@ -59,9 +62,9 @@ export const WhatsAppInstanceCard = ({
       default:
         return <Badge variant="destructive">Desconectado</Badge>;
     }
-  };
+  }
 
-  const getStatusIcon = (status: WhatsAppInstance['status']) => {
+  function getStatusIcon(status: WhatsAppInstance['status']) {
     switch (status) {
       case 'connected':
         return <Wifi className="w-4 h-4 text-green-500" />;
@@ -72,7 +75,7 @@ export const WhatsAppInstanceCard = ({
       default:
         return <WifiOff className="w-4 h-4 text-red-500" />;
     }
-  };
+  }
 
   return (
     <Card className="border-0 bg-card/50 backdrop-blur-sm">
