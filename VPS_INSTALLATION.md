@@ -5,6 +5,7 @@
 - [Pré-requisitos](#pré-requisitos)
 - [Opção 1: Instalação Tradicional na VPS](#opção-1-instalação-tradicional-na-vps)
 - [Opção 2: Instalação com Docker & Portainer](#opção-2-instalação-com-docker--portainer)
+- [Evolution API - Configuração Completa](#evolution-api---configuração-completa)
 - [Configuração do Supabase](#configuração-do-supabase)
 - [Configuração de Domínio e SSL](#configuração-de-domínio-e-ssl)
 - [Monitoramento e Manutenção](#monitoramento-e-manutenção)
@@ -16,9 +17,9 @@
 
 ### 🖥️ Servidor VPS
 - **OS**: Ubuntu 20.04 LTS ou superior / CentOS 8+
-- **RAM**: Mínimo 2GB (Recomendado 4GB+)
-- **Storage**: Mínimo 20GB SSD
-- **CPU**: 2 vCPUs mínimo
+- **RAM**: Mínimo 4GB (Recomendado 8GB+)
+- **Storage**: Mínimo 40GB SSD
+- **CPU**: 4 vCPUs mínimo
 - **Rede**: IP público com acesso SSH
 
 ### 🌐 Domínio
@@ -176,73 +177,181 @@ sudo certbot renew --dry-run
 
 ## 🐳 Opção 2: Instalação com Docker & Portainer
 
-### 1️⃣ Instalar Docker
+### 📋 Checklist Docker & Portainer (ASSUMINDO QUE JÁ ESTÁ INSTALADO)
 
-```bash
-# Conectar via SSH
-ssh root@SEU_IP_VPS
+Baseado na informação que você já tem Docker e Portainer instalados com rede "Nexus":
 
-# Atualizar sistema
-sudo apt update && sudo apt upgrade -y
+- [x] Docker instalado e funcionando
+- [x] Portainer instalado e acessível
+- [x] Rede "Nexus" criada
+- [ ] Stack Nexus Agents a ser criada
+- [ ] Evolution API a ser configurada
 
-# Instalar Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
+### 1️⃣ Criando Stack no Portainer
 
-# Adicionar usuário ao grupo docker
-sudo usermod -aG docker $USER
+1. **Acesse Portainer**: `https://SEU_IP_VPS:9443`
+2. **Vá para Stacks** → **Add Stack**
+3. **Nome da Stack**: `nexus-agents`
+4. **Cole o docker-compose.yml abaixo**:
 
-# Instalar Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
+### 2️⃣ Docker Compose para Nexus Agents + Evolution API
 
-# Verificar instalação
-docker --version
-docker-compose --version
+```yaml
+version: '3.8'
+
+networks:
+  nexus:
+    external: true
+
+services:
+  # Evolution API
+  evolution-api:
+    image: atendai/evolution-api:v2.0.0
+    container_name: evolution-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Configurações do Servidor
+      - SERVER_TYPE=http
+      - SERVER_PORT=8080
+      - CORS_ORIGIN=*
+      - CORS_METHODS=POST,GET,PUT,DELETE
+      - CORS_CREDENTIALS=true
+      
+      # Configurações de Autenticação
+      - AUTHENTICATION_TYPE=apikey
+      - AUTHENTICATION_API_KEY=e5fe045f841bddf5406357ebea55ea2b
+      - AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES=true
+      
+      # Configurações do WhatsApp
+      - QRCODE_TYPE=terminal
+      - QRCODE_COLOR=#198754
+      
+      # Configurações do Webhook
+      - WEBHOOK_GLOBAL_URL=https://seu-crm.com/webhook/whatsapp
+      - WEBHOOK_GLOBAL_ENABLED=false
+      - WEBHOOK_GLOBAL_WEBHOOK_BY_EVENTS=false
+      
+      # Configurações do Banco de Dados (PostgreSQL)
+      - DATABASE_ENABLED=true
+      - DATABASE_CONNECTION_URI=postgresql://evolution:evolution123@postgres-evolution:5432/evolution
+      - DATABASE_CONNECTION_CLIENT_NAME=evolution_api
+      
+      # Configurações do Redis
+      - REDIS_ENABLED=true
+      - REDIS_URI=redis://redis-evolution:6379
+      - REDIS_PREFIX_KEY=evolution_api
+      
+      # Configurações de Logs
+      - LOG_LEVEL=ERROR,WARN,DEBUG,INFO,LOG,VERBOSE,DARK,WEBHOOKS
+      - LOG_COLOR=true
+      - LOG_BAILEYS=error
+      
+      # Configurações de Instância
+      - DEL_INSTANCE=false
+      - DEL_TEMP_INSTANCES=true
+      - CLEAN_STORE_CLEANING_INTERVAL=7200
+      - CLEAN_STORE_MESSAGES=true
+      - CLEAN_STORE_MESSAGE_UP_TO=false
+      - CLEAN_STORE_CONTACTS=true
+      - CLEAN_STORE_CHATS=true
+      
+    volumes:
+      - evolution_instances:/evolution/instances
+      - evolution_store:/evolution/store
+    networks:
+      - nexus
+    depends_on:
+      - postgres-evolution
+      - redis-evolution
+
+  # PostgreSQL para Evolution API
+  postgres-evolution:
+    image: postgres:15-alpine
+    container_name: postgres-evolution
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=evolution
+      - POSTGRES_USER=evolution
+      - POSTGRES_PASSWORD=evolution123
+    volumes:
+      - postgres_evolution_data:/var/lib/postgresql/data
+    networks:
+      - nexus
+
+  # Redis para Evolution API
+  redis-evolution:
+    image: redis:7-alpine
+    container_name: redis-evolution
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_evolution_data:/data
+    networks:
+      - nexus
+
+  # Nexus Agents Frontend
+  nexus-agents:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: nexus-agents-app
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_SUPABASE_URL=https://eirvcmzqbtkmoxquovsy.supabase.co
+      - VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpcnZjbXpxYnRrbW94cXVvdnN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5OTIzNzEsImV4cCI6MjA2NTU2ODM3MX0.pFTNDBbigWzm0pdWvuzQU9giujRVVSXU-tm8eXpl2ts
+      - VITE_EVOLUTION_API_URL=http://evolution-api:8080
+      - VITE_EVOLUTION_API_KEY=e5fe045f841bddf5406357ebea55ea2b
+    networks:
+      - nexus
+    depends_on:
+      - evolution-api
+
+  # Reverse Proxy com Traefik
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080" # Dashboard do Traefik
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.letsencrypt.acme.email=seu-email@dominio.com
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_letsencrypt:/letsencrypt
+    networks:
+      - nexus
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.SEU_DOMINIO.com`)"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+
+volumes:
+  evolution_instances:
+  evolution_store:
+  postgres_evolution_data:
+  redis_evolution_data:
+  traefik_letsencrypt:
 ```
 
-### 2️⃣ Instalar Portainer
+### 3️⃣ Dockerfile para Nexus Agents
 
-```bash
-# Criar volume para Portainer
-docker volume create portainer_data
+Crie um arquivo `Dockerfile` no diretório do projeto:
 
-# Executar Portainer
-docker run -d -p 8000:8000 -p 9443:9443 --name portainer --restart=always \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    -v portainer_data:/data \
-    portainer/portainer-ce:latest
-```
-
-### 3️⃣ Configurar Firewall para Docker
-
-```bash
-# Configurar UFW
-sudo ufw allow OpenSSH
-sudo ufw allow 80
-sudo ufw allow 443
-sudo ufw allow 9443
-sudo ufw enable
-```
-
-### 4️⃣ Acessar Portainer
-
-1. Acesse: `https://SEU_IP_VPS:9443`
-2. Crie senha de admin
-3. Conecte ao Docker local
-
-### 5️⃣ Criar Dockerfile para Nexus Agents
-
-```bash
-# Criar diretório do projeto
-mkdir -p /opt/nexus-agents
-cd /opt/nexus-agents
-
-# Criar Dockerfile
-nano Dockerfile
-```
-
-**Conteúdo do Dockerfile:**
 ```dockerfile
 # Build stage
 FROM node:18-alpine as build
@@ -274,14 +383,8 @@ EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
-### 6️⃣ Criar configuração do Nginx
+### 4️⃣ Configuração do Nginx (nginx.conf)
 
-```bash
-# Criar nginx.conf
-nano nginx.conf
-```
-
-**Conteúdo do nginx.conf:**
 ```nginx
 server {
     listen 80;
@@ -308,58 +411,93 @@ server {
 }
 ```
 
-### 7️⃣ Criar Docker Compose
+### 5️⃣ Deploy no Portainer
+
+1. **No Portainer, vá para Stacks**
+2. **Add Stack** → Nome: `nexus-agents`
+3. **Cole o docker-compose.yml**
+4. **Configure as variáveis de ambiente se necessário**
+5. **Deploy the Stack**
+
+### 6️⃣ Configurar Labels do Traefik
+
+Adicione estas labels aos serviços no docker-compose:
+
+```yaml
+# Para o Nexus Agents
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.nexus-agents.rule=Host(`SEU_DOMINIO.com`)"
+  - "traefik.http.routers.nexus-agents.tls.certresolver=letsencrypt"
+  - "traefik.http.services.nexus-agents.loadbalancer.server.port=80"
+
+# Para Evolution API
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.evolution-api.rule=Host(`api.SEU_DOMINIO.com`)"
+  - "traefik.http.routers.evolution-api.tls.certresolver=letsencrypt"
+  - "traefik.http.services.evolution-api.loadbalancer.server.port=8080"
+```
+
+---
+
+## 📱 Evolution API - Configuração Completa
+
+### ✅ Checklist Evolution API
+
+- [ ] **Container rodando** (porta 8080)
+- [ ] **PostgreSQL conectado**
+- [ ] **Redis funcionando**
+- [ ] **API Key configurada**: `e5fe045f841bddf5406357ebea55ea2b`
+- [ ] **Endpoints acessíveis**
+- [ ] **Webhook configurado** (opcional)
+
+### 🔧 Endpoints Importantes
 
 ```bash
-# Criar docker-compose.yml
-nano docker-compose.yml
+# Testar API
+curl -X GET "https://api.SEU_DOMINIO.com/instance/fetchInstances" \
+  -H "apikey: e5fe045f841bddf5406357ebea55ea2b"
+
+# Criar instância
+curl -X POST "https://api.SEU_DOMINIO.com/instance/create" \
+  -H "Content-Type: application/json" \
+  -H "apikey: e5fe045f841bddf5406357ebea55ea2b" \
+  -d '{
+    "instanceName": "test-instance",
+    "qrcode": true,
+    "webhook": "https://seu-webhook.com/whatsapp"
+  }'
+
+# Conectar instância
+curl -X GET "https://api.SEU_DOMINIO.com/instance/connect/test-instance" \
+  -H "apikey: e5fe045f841bddf5406357ebea55ea2b"
+
+# Obter QR Code
+curl -X GET "https://api.SEU_DOMINIO.com/instance/qrcode/test-instance" \
+  -H "apikey: e5fe045f841bddf5406357ebea55ea2b"
 ```
 
-**Conteúdo do docker-compose.yml:**
-```yaml
-version: '3.8'
+### 🔍 Logs da Evolution API
 
-services:
-  nexus-agents:
-    build: .
-    container_name: nexus-agents-app
-    restart: unless-stopped
-    ports:
-      - "80:80"
-    environment:
-      - VITE_SUPABASE_URL=https://eirvcmzqbtkmoxquovsy.supabase.co
-      - VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpcnZjbXpxYnRrbW94cXVvdnN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5OTIzNzEsImV4cCI6MjA2NTU2ODM3MX0.pFTNDBbigWzm0pdWvuzQU9giujRVVSXU-tm8eXpl2ts
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.nexus-agents.rule=Host(\`SEU_DOMINIO.com\`)"
-      - "traefik.http.routers.nexus-agents.tls.certresolver=letsencrypt"
+```bash
+# Ver logs do container
+docker logs evolution-api -f
 
-  # Opcional: Traefik para SSL automático
-  traefik:
-    image: traefik:v2.10
-    container_name: traefik
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8080:8080"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik.yml:/traefik.yml:ro
-      - ./acme.json:/acme.json
-    labels:
-      - "traefik.enable=true"
+# Ver logs do PostgreSQL
+docker logs postgres-evolution -f
+
+# Ver logs do Redis
+docker logs redis-evolution -f
 ```
 
-### 8️⃣ Deploy via Portainer
+### 🌐 Configuração de Domínios
 
-1. **Acesse Portainer**: `https://SEU_IP_VPS:9443`
-2. **Vá para Stacks** → **Add Stack**
-3. **Nome**: `nexus-agents`
-4. **Cole o conteúdo do docker-compose.yml**
-5. **Clique em Deploy**
+Para usar domínios personalizados:
+
+1. **API Evolution**: `api.seudominio.com` → porta 8080
+2. **Nexus Agents**: `seudominio.com` → porta 3000
+3. **Traefik Dashboard**: `traefik.seudominio.com` → porta 8080
 
 ---
 
@@ -402,51 +540,13 @@ SELECT * FROM auth.users WHERE email = 'stark@redenexus.top';
 
 - [ ] **Registro A**: `SEU_DOMINIO.com` → `IP_DA_VPS`
 - [ ] **Registro A**: `www.SEU_DOMINIO.com` → `IP_DA_VPS`
+- [ ] **Registro A**: `api.SEU_DOMINIO.com` → `IP_DA_VPS`
 - [ ] **TTL**: 300 (5 minutos)
 - [ ] **Propagação**: Aguardar 24h máximo
 
-### 🔒 SSL Automático com Traefik (Docker)
+### 🔒 SSL Automático com Traefik
 
-```bash
-# Criar traefik.yml
-nano traefik.yml
-```
-
-**Conteúdo do traefik.yml:**
-```yaml
-api:
-  dashboard: true
-  insecure: true
-
-entryPoints:
-  web:
-    address: ":80"
-    http:
-      redirections:
-        entrypoint:
-          to: websecure
-          scheme: https
-  websecure:
-    address: ":443"
-
-providers:
-  docker:
-    exposedByDefault: false
-
-certificatesResolvers:
-  letsencrypt:
-    acme:
-      email: seu-email@dominio.com
-      storage: acme.json
-      httpChallenge:
-        entryPoint: web
-```
-
-```bash
-# Criar arquivo para certificados
-touch acme.json
-chmod 600 acme.json
-```
+O Traefik configurado no docker-compose já cuida automaticamente dos certificados SSL via Let's Encrypt.
 
 ---
 
@@ -455,82 +555,27 @@ chmod 600 acme.json
 ### 🔍 Scripts de Monitoramento
 
 ```bash
-# Criar script de backup
-nano /usr/local/bin/backup-nexus.sh
-```
+# Status dos containers
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
-**Conteúdo do backup-nexus.sh:**
-```bash
-#!/bin/bash
-
-DATE=$(date +%Y%m%d_%H%M%S)
-BACKUP_DIR="/opt/backups"
-APP_DIR="/var/www/nexus-agents"
-
-# Criar diretório de backup
-mkdir -p $BACKUP_DIR
-
-# Backup da aplicação
-tar -czf $BACKUP_DIR/nexus-agents_$DATE.tar.gz -C $APP_DIR .
-
-# Manter apenas os últimos 7 backups
-find $BACKUP_DIR -name "nexus-agents_*.tar.gz" -mtime +7 -delete
-
-echo "Backup concluído: nexus-agents_$DATE.tar.gz"
-```
-
-```bash
-# Tornar executável
-chmod +x /usr/local/bin/backup-nexus.sh
-
-# Adicionar ao crontab
-crontab -e
-# Adicionar linha: 0 2 * * * /usr/local/bin/backup-nexus.sh
-```
-
-### 📈 Script de Monitoramento de Status
-
-```bash
-# Criar script de status
-nano /usr/local/bin/status-nexus.sh
-```
-
-**Conteúdo do status-nexus.sh:**
-```bash
-#!/bin/bash
-
-echo "=== Status do Nexus Agents ==="
-echo "Data: $(date)"
-echo ""
-
-# Status do Nginx
-echo "Nginx Status:"
-systemctl is-active nginx
-echo ""
-
-# Status do Docker (se usando)
-if command -v docker &> /dev/null; then
-    echo "Docker Containers:"
-    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-    echo ""
-fi
+# Logs em tempo real
+docker logs -f nexus-agents-app
+docker logs -f evolution-api
+docker logs -f traefik
 
 # Uso de recursos
-echo "Uso de Recursos:"
-echo "CPU: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | awk -F'%' '{print $1}')%"
-echo "RAM: $(free -m | awk 'NR==2{printf "%.1f%%", $3*100/$2}')"
-echo "Disk: $(df -h / | awk 'NR==2{print $5}')"
-echo ""
+docker stats
 
-# Últimos logs
-echo "Últimos erros do Nginx:"
-tail -n 5 /var/log/nginx/error.log
+# Backup dos volumes
+docker run --rm -v nexus-agents_postgres_evolution_data:/data -v $(pwd):/backup alpine tar czf /backup/postgres-backup.tar.gz -C /data .
 ```
 
-```bash
-# Tornar executável
-chmod +x /usr/local/bin/status-nexus.sh
-```
+### 📈 Monitoramento com Portainer
+
+1. **Dashboard**: Ver status de todos os containers
+2. **Logs**: Acessar logs de cada serviço
+3. **Stats**: Monitorar uso de CPU/RAM/Disk
+4. **Volumes**: Gerenciar dados persistentes
 
 ---
 
@@ -538,101 +583,100 @@ chmod +x /usr/local/bin/status-nexus.sh
 
 ### ❌ Problemas Comuns
 
-#### 1. **Aplicação não carrega**
+#### 1. **Evolution API não responde**
 ```bash
-# Verificar logs do Nginx
-sudo tail -f /var/log/nginx/error.log
+# Verificar se o container está rodando
+docker ps | grep evolution-api
 
-# Verificar configuração
-sudo nginx -t
+# Ver logs
+docker logs evolution-api
 
-# Reiniciar serviços
-sudo systemctl restart nginx
+# Testar conectividade
+curl -I http://localhost:8080
 ```
 
-#### 2. **Erro 404 em rotas internas**
-- Verificar se a configuração SPA está correta
-- `try_files $uri $uri/ /index.html;` no Nginx
+#### 2. **Erro "Invalid integration"**
+- Verificar se a API Key está correta
+- Conferir se todos os containers estão rodando
+- Validar configuração do PostgreSQL
 
-#### 3. **SSL não funciona**
+#### 3. **QR Code não aparece**
 ```bash
-# Verificar certificado
-sudo certbot certificates
+# Verificar logs da Evolution API
+docker logs evolution-api | grep -i qr
 
-# Renovar certificado
-sudo certbot renew --force-renewal
+# Testar endpoint manualmente
+curl -X GET "http://localhost:8080/instance/qrcode/INSTANCE_NAME" \
+  -H "apikey: e5fe045f841bddf5406357ebea55ea2b"
 ```
 
-#### 4. **Docker containers não iniciam**
+#### 4. **SSL não funciona**
+- Verificar se o Traefik está rodando
+- Conferir DNS apontando corretamente
+- Ver logs do Traefik: `docker logs traefik`
+
+#### 5. **Containers não conectam na rede**
 ```bash
-# Verificar logs
-docker logs nexus-agents-app
+# Verificar se a rede "nexus" existe
+docker network ls | grep nexus
 
-# Verificar recursos
-docker stats
-
-# Reiniciar containers
-docker-compose restart
+# Recriar a rede se necessário
+docker network create nexus
 ```
 
 ### 🔧 Comandos Úteis
 
 ```bash
-# Verificar portas abertas
-sudo netstat -tulpn | grep LISTEN
+# Reiniciar toda a stack
+docker-compose down && docker-compose up -d
 
-# Verificar processos
-sudo ps aux | grep nginx
+# Verificar conectividade entre containers
+docker exec -it nexus-agents-app ping evolution-api
 
-# Verificar espaço em disco
-df -h
+# Backup completo
+docker run --rm -v nexus-agents_evolution_instances:/data -v $(pwd):/backup alpine tar czf /backup/evolution-instances.tar.gz -C /data .
 
-# Verificar memória
-free -h
+# Restaurar backup
+docker run --rm -v nexus-agents_evolution_instances:/data -v $(pwd):/backup alpine tar xzf /backup/evolution-instances.tar.gz -C /data
 
-# Logs em tempo real
-tail -f /var/log/nginx/access.log
+# Limpar containers órfãos
+docker system prune -a
 ```
 
 ---
 
 ## ✅ Checklist Final de Instalação
 
-### 🖥️ Servidor
-- [ ] VPS configurada e acessível
-- [ ] Ubuntu/CentOS atualizado
-- [ ] Firewall configurado
-- [ ] SSH funcionando
+### 🐳 Docker & Portainer
+- [ ] Portainer acessível via web
+- [ ] Rede "nexus" criada
+- [ ] Stack "nexus-agents" deployada
+- [ ] Todos os containers rodando
 
-### 🐳 Docker (Opção 2)
-- [ ] Docker instalado
-- [ ] Docker Compose instalado
-- [ ] Portainer funcionando
-- [ ] Containers rodando
+### 📱 Evolution API
+- [ ] Container evolution-api rodando
+- [ ] PostgreSQL conectado
+- [ ] Redis funcionando
+- [ ] API respondendo na porta 8080
+- [ ] Endpoints testados com sucesso
 
-### 🌐 Aplicação
-- [ ] Código clonado/buildado
-- [ ] Variáveis de ambiente configuradas
-- [ ] Nginx configurado
-- [ ] SPA routes funcionando
+### 🖥️ Nexus Agents
+- [ ] Container nexus-agents-app rodando
+- [ ] Build realizado com sucesso
+- [ ] Conectividade com Supabase
+- [ ] Conectividade com Evolution API
 
-### 🔒 SSL e Domínio
-- [ ] DNS apontando corretamente
-- [ ] SSL certificado ativo
-- [ ] HTTPS redirecionamento funcionando
-- [ ] Domínio acessível
+### 🌐 Rede e SSL
+- [ ] Traefik rodando
+- [ ] SSL certificados gerados
+- [ ] Domínios acessíveis via HTTPS
+- [ ] Redirecionamento HTTP → HTTPS
 
-### 🔗 Supabase
-- [ ] Conexão com banco funcionando
-- [ ] Autenticação funcionando
-- [ ] Login/logout funcionando
-- [ ] Dados sendo salvos
-
-### 📊 Monitoramento
-- [ ] Backup automatizado
-- [ ] Logs sendo gerados
-- [ ] Monitoramento ativo
-- [ ] Alertas configurados
+### 🔗 Integração
+- [ ] Nexus Agents consegue criar instâncias
+- [ ] QR Code sendo exibido
+- [ ] WhatsApp conectando
+- [ ] Mensagens sendo enviadas
 
 ---
 
@@ -640,18 +684,19 @@ tail -f /var/log/nginx/access.log
 
 Se encontrar problemas durante a instalação:
 
-1. **Verifique os logs** primeiro
-2. **Consulte este guia** novamente
-3. **Teste cada etapa** individualmente
-4. **Documente o erro** para análise
+1. **Verifique os logs** de cada container
+2. **Teste as conexões** entre serviços
+3. **Consulte este guia** novamente
+4. **Valide as configurações** de rede e portas
 
 **Logs importantes:**
-- `/var/log/nginx/error.log` - Erros do Nginx
-- `/var/log/nginx/access.log` - Acessos
-- `docker logs CONTAINER_NAME` - Logs do Docker
+- `docker logs evolution-api` - API Evolution
+- `docker logs nexus-agents-app` - Frontend
+- `docker logs traefik` - Proxy reverso
+- `docker logs postgres-evolution` - Banco de dados
 
 ---
 
-🎉 **Parabéns!** Se chegou até aqui, o Nexus Agents está rodando em produção!
+🎉 **Parabéns!** Se chegou até aqui, o Nexus Agents com Evolution API está rodando em produção!
 
 📧 **Contato**: Para suporte, abra uma issue no repositório.

@@ -6,8 +6,11 @@ interface EvolutionApiConfig {
 
 interface CreateInstanceRequest {
   instanceName: string;
+  token?: string;
+  qrcode?: boolean;
   webhook?: string;
-  webhookByEvents?: boolean;
+  webhook_by_events?: boolean;
+  webhook_base64?: boolean;
   events?: string[];
 }
 
@@ -15,6 +18,8 @@ interface InstanceResponse {
   instance: {
     instanceName: string;
     status: string;
+    serverUrl?: string;
+    apikey?: string;
   };
   hash?: {
     apikey: string;
@@ -24,6 +29,21 @@ interface InstanceResponse {
     code?: string;
     base64?: string;
   };
+}
+
+interface QRCodeResponse {
+  base64: string;
+  code: string;
+  pairingCode?: string;
+}
+
+interface ConnectionState {
+  instance: {
+    instanceName: string;
+    state: string;
+    status: string;
+  };
+  qrcode?: QRCodeResponse;
 }
 
 export class EvolutionApiService {
@@ -36,8 +56,10 @@ export class EvolutionApiService {
   async createInstance(instanceName: string, webhook?: string): Promise<InstanceResponse> {
     const payload: CreateInstanceRequest = {
       instanceName,
+      qrcode: true,
       webhook: webhook || 'https://seu-crm.com/webhook/whatsapp',
-      webhookByEvents: true,
+      webhook_by_events: true,
+      webhook_base64: false,
       events: [
         'APPLICATION_STARTUP',
         'QRCODE_UPDATED',
@@ -85,7 +107,7 @@ export class EvolutionApiService {
     return data;
   }
 
-  async connectInstance(instanceName: string): Promise<any> {
+  async connectInstance(instanceName: string): Promise<ConnectionState> {
     console.log('Conectando instância:', instanceName);
 
     const response = await fetch(`${this.config.baseUrl}/instance/connect/${instanceName}`, {
@@ -103,6 +125,24 @@ export class EvolutionApiService {
 
     const data = await response.json();
     console.log('Resposta da conexão:', data);
+    return data;
+  }
+
+  async getQRCode(instanceName: string): Promise<QRCodeResponse> {
+    const response = await fetch(`${this.config.baseUrl}/instance/qrcode/${instanceName}`, {
+      method: 'GET',
+      headers: {
+        'apikey': this.config.apiKey
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Erro ao buscar QR Code:', response.status, errorText);
+      throw new Error(`Erro ao buscar QR Code: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
     return data;
   }
 
@@ -176,6 +216,25 @@ export class EvolutionApiService {
     const data = await response.json();
     console.log('Mensagem enviada:', data);
     return data;
+  }
+
+  async logoutInstance(instanceName: string): Promise<void> {
+    console.log('Desconectando instância:', instanceName);
+
+    const response = await fetch(`${this.config.baseUrl}/instance/logout/${instanceName}`, {
+      method: 'DELETE',
+      headers: {
+        'apikey': this.config.apiKey
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Erro ao desconectar instância:', response.status, errorText);
+      throw new Error(`Erro ao desconectar instância: ${response.status} - ${errorText}`);
+    }
+
+    console.log('Instância desconectada com sucesso');
   }
 }
 
