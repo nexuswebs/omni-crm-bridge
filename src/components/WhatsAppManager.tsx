@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -76,7 +75,7 @@ export const WhatsAppManager = () => {
         id: newInstanceName,
         name: newInstanceName,
         status: 'disconnected',
-        webhook: 'https://seu-crm.com/webhook/whatsapp',
+        webhook: 'https://webhook.site/unique-id',
         autoReply: false,
         autoReplyMessage: 'Obrigado pela mensagem! Retornaremos em breve.',
         businessHours: {
@@ -133,7 +132,11 @@ export const WhatsAppManager = () => {
     try {
       console.log('Conectando instância real:', instanceId);
       
-      const response = await evolutionApi.connectInstance(instanceId);
+      // Primeiro conectar a instância
+      const connectResponse = await evolutionApi.connectInstance(instanceId);
+      
+      // Em seguida buscar o QR Code
+      const qrResponse = await evolutionApi.getQRCode(instanceId);
       
       setInstances(prevInstances => {
         return prevInstances.map(instance => {
@@ -141,7 +144,7 @@ export const WhatsAppManager = () => {
             return { 
               ...instance, 
               status: 'qr_ready',
-              qrCode: response.qrcode?.base64 || response.qrcode?.code || 'qr-code-data'
+              qrCode: qrResponse.base64 || qrResponse.code
             };
           }
           return instance;
@@ -192,7 +195,7 @@ export const WhatsAppManager = () => {
   const handleDisconnectInstance = async (instanceId: string) => {
     setIsLoading(true);
     try {
-      await evolutionApi.deleteInstance(instanceId);
+      await evolutionApi.logoutInstance(instanceId);
 
       setInstances(prevInstances => {
         return prevInstances.map(instance => {
@@ -600,7 +603,7 @@ export const WhatsAppManager = () => {
                       ...selectedInstance,
                       webhook: e.target.value
                     })}
-                    placeholder="https://seu-crm.com/webhook/whatsapp"
+                    placeholder="https://webhook.site/unique-id"
                   />
                 </div>
 

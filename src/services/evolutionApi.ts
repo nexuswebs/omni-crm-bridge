@@ -56,9 +56,9 @@ export class EvolutionApiService {
   async createInstance(instanceName: string, webhook?: string): Promise<InstanceResponse> {
     const payload: CreateInstanceRequest = {
       instanceName,
-      integration: 'WHATSAPP-BAILEYS', // OBRIGATÓRIO para Evolution API
+      integration: 'WHATSAPP-BAILEYS',
       qrcode: true,
-      webhook: webhook || 'https://seu-crm.com/webhook/whatsapp',
+      webhook: webhook || 'https://webhook.site/unique-id',
       webhook_by_events: true,
       webhook_base64: false,
       events: [
@@ -147,8 +147,27 @@ export class EvolutionApiService {
     return data;
   }
 
-  async getInstanceStatus(instanceName: string): Promise<any> {
+  async getInstanceInfo(instanceName: string): Promise<any> {
     const response = await fetch(`${this.config.baseUrl}/instance/fetchInstances?instanceName=${instanceName}`, {
+      method: 'GET',
+      headers: {
+        'apikey': this.config.apiKey
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Erro ao buscar informações da instância:', response.status, errorText);
+      throw new Error(`Erro ao buscar informações: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('Informações da instância:', data);
+    return data;
+  }
+
+  async getInstanceStatus(instanceName: string): Promise<any> {
+    const response = await fetch(`${this.config.baseUrl}/instance/connectionState/${instanceName}`, {
       method: 'GET',
       headers: {
         'apikey': this.config.apiKey
@@ -236,6 +255,25 @@ export class EvolutionApiService {
     }
 
     console.log('Instância desconectada com sucesso');
+  }
+
+  async restartInstance(instanceName: string): Promise<void> {
+    console.log('Reiniciando instância:', instanceName);
+
+    const response = await fetch(`${this.config.baseUrl}/instance/restart/${instanceName}`, {
+      method: 'PUT',
+      headers: {
+        'apikey': this.config.apiKey
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Erro ao reiniciar instância:', response.status, errorText);
+      throw new Error(`Erro ao reiniciar instância: ${response.status} - ${errorText}`);
+    }
+
+    console.log('Instância reiniciada com sucesso');
   }
 }
 
