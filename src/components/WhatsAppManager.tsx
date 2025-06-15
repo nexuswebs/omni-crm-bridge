@@ -41,8 +41,48 @@ export const WhatsAppManager = () => {
   const [webhookUrl, setWebhookUrl] = useState('https://seu-webhook.com/whatsapp');
   const [message, setMessage] = useState('');
   const [recipient, setRecipient] = useState('');
+  const [bulkRecipients, setBulkRecipients] = useState('');
+  const [bulkMessage, setBulkMessage] = useState('');
+
+  const handleConfigureInstance = (instanceId: number) => {
+    const instance = instances.find(i => i.id === instanceId);
+    console.log('Configurando instância:', instance?.name);
+    toast({
+      title: "Configuração de Instância",
+      description: `Abrindo configurações para ${instance?.name}`,
+    });
+  };
+
+  const handleToggleConnection = (instanceId: number) => {
+    const instance = instances.find(i => i.id === instanceId);
+    if (!instance) return;
+
+    const newStatus = instance.status === 'connected' ? 'disconnected' : 'connected';
+    
+    setInstances(prev => prev.map(i => 
+      i.id === instanceId ? { ...i, status: newStatus } : i
+    ));
+
+    console.log(`${newStatus === 'connected' ? 'Conectando' : 'Desconectando'} instância:`, instance.name);
+    
+    toast({
+      title: newStatus === 'connected' ? "Instância Conectada" : "Instância Desconectada",
+      description: `${instance.name} foi ${newStatus === 'connected' ? 'conectada' : 'desconectada'} com sucesso.`,
+    });
+  };
 
   const handleSaveConfig = () => {
+    if (!apiUrl || !globalApiKey) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha a URL da API e a chave global.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('Salvando configurações Evolution API:', { apiUrl, globalApiKey: '***', webhookUrl });
+    
     toast({
       title: "Configurações salvas!",
       description: "As configurações da Evolution API foram atualizadas.",
@@ -50,9 +90,56 @@ export const WhatsAppManager = () => {
   };
 
   const handleTestConnection = () => {
+    if (!apiUrl || !globalApiKey) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha a URL da API e a chave global antes de testar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('Testando conexão Evolution API');
+    
     toast({
-      title: "Conexão testada",
-      description: "Conectado com sucesso à Evolution API.",
+      title: "Testando conexão...",
+      description: "Verificando conectividade com Evolution API.",
+    });
+
+    // Simular teste
+    setTimeout(() => {
+      toast({
+        title: "Conexão testada",
+        description: "Conectado com sucesso à Evolution API.",
+      });
+    }, 2000);
+  };
+
+  const handleExportConfig = () => {
+    const config = {
+      apiUrl,
+      webhookUrl,
+      instances: instances.map(i => ({
+        name: i.name,
+        webhook: i.webhook,
+        autoReply: i.autoReply
+      }))
+    };
+
+    const dataStr = JSON.stringify(config, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'whatsapp-config.json';
+    link.click();
+    
+    console.log('Exportando configurações:', config);
+    
+    toast({
+      title: "Configurações exportadas!",
+      description: "Arquivo de configuração foi baixado.",
     });
   };
 
@@ -66,12 +153,59 @@ export const WhatsAppManager = () => {
       return;
     }
 
+    console.log('Enviando mensagem:', { recipient, message });
+    
     toast({
       title: "Mensagem enviada!",
       description: `Mensagem enviada para ${recipient}`,
     });
     setMessage('');
     setRecipient('');
+  };
+
+  const handleBulkSend = () => {
+    if (!bulkMessage || !bulkRecipients) {
+      toast({
+        title: "Erro",
+        description: "Preencha os destinatários e a mensagem.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const recipients = bulkRecipients.split('\n').filter(r => r.trim());
+    console.log('Enviando mensagem em massa para:', recipients.length, 'destinatários');
+    
+    toast({
+      title: "Envio em massa iniciado!",
+      description: `Enviando mensagem para ${recipients.length} destinatários.`,
+    });
+    
+    setBulkMessage('');
+    setBulkRecipients('');
+  };
+
+  const handleImportList = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.txt,.csv';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target?.result as string;
+          setBulkRecipients(content);
+          console.log('Lista importada:', content);
+          toast({
+            title: "Lista importada!",
+            description: "Contatos foram carregados com sucesso.",
+          });
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
   };
 
   const getStatusColor = (status: string) => {
@@ -150,7 +284,12 @@ export const WhatsAppManager = () => {
                   )}
 
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="flex-1">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => handleConfigureInstance(instance.id)}
+                    >
                       <Settings className="w-4 h-4 mr-2" />
                       Configurar
                     </Button>
@@ -158,6 +297,7 @@ export const WhatsAppManager = () => {
                       size="sm" 
                       variant={instance.status === 'connected' ? 'destructive' : 'default'}
                       className="flex-1"
+                      onClick={() => handleToggleConnection(instance.id)}
                     >
                       {instance.status === 'connected' ? 'Desconectar' : 'Conectar'}
                     </Button>
@@ -181,9 +321,43 @@ export const WhatsAppManager = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-12">
-              <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Nenhuma conversa ativa no momento</p>
+            <div className="space-y-4">
+              <div className="flex gap-4">
+                <Select value={selectedInstance.name} onValueChange={(value) => {
+                  const instance = instances.find(i => i.name === value);
+                  if (instance) setSelectedInstance(instance);
+                }}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Selecionar instância" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {instances.map((instance) => (
+                      <SelectItem key={instance.id} value={instance.name}>
+                        {instance.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Input
+                  placeholder="Número do destinatário"
+                  value={recipient}
+                  onChange={(e) => setRecipient(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+              
+              <Textarea
+                placeholder="Digite sua mensagem..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={4}
+              />
+              
+              <Button onClick={handleSendMessage} className="bg-gradient-primary">
+                <Send className="w-4 h-4 mr-2" />
+                Enviar Mensagem
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -207,6 +381,8 @@ export const WhatsAppManager = () => {
                 id="recipients"
                 placeholder="5511999999999&#10;5511888888888&#10;5511777777777"
                 rows={6}
+                value={bulkRecipients}
+                onChange={(e) => setBulkRecipients(e.target.value)}
               />
             </div>
 
@@ -216,15 +392,17 @@ export const WhatsAppManager = () => {
                 id="bulk-message"
                 placeholder="Digite sua mensagem aqui..."
                 rows={4}
+                value={bulkMessage}
+                onChange={(e) => setBulkMessage(e.target.value)}
               />
             </div>
 
             <div className="flex gap-2">
-              <Button className="bg-gradient-primary">
+              <Button className="bg-gradient-primary" onClick={handleBulkSend}>
                 <Send className="w-4 h-4 mr-2" />
                 Enviar para Todos
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={handleImportList}>
                 <Users className="w-4 h-4 mr-2" />
                 Importar Lista
               </Button>
@@ -316,7 +494,7 @@ export const WhatsAppManager = () => {
               <Button variant="outline" onClick={handleTestConnection}>
                 Testar Conexão
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={handleExportConfig}>
                 Exportar Configurações
               </Button>
             </div>
