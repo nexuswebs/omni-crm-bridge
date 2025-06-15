@@ -28,6 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log('Buscando perfil para usuário:', userId);
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -39,9 +40,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
 
+      console.log('Perfil encontrado:', profile);
       return profile;
     } catch (error) {
       console.error('Erro ao buscar perfil:', error);
+      return null;
+    }
+  };
+
+  const createUserProfile = async (userId: string, email: string, name: string) => {
+    try {
+      console.log('Criando perfil para usuário:', userId, email, name);
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: userId,
+            name: name,
+            email: email,
+            role: 'user' as const
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erro ao criar perfil:', error);
+        return null;
+      }
+
+      console.log('Perfil criado com sucesso:', data);
+      return data;
+    } catch (error) {
+      console.error('Erro ao criar perfil:', error);
       return null;
     }
   };
@@ -56,7 +87,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user) {
           // Buscar perfil do usuário
           setTimeout(async () => {
-            const profile = await fetchUserProfile(session.user.id);
+            let profile = await fetchUserProfile(session.user.id);
+            
+            // Se não encontrou perfil, criar um novo
+            if (!profile) {
+              console.log('Perfil não encontrado, criando novo...');
+              profile = await createUserProfile(
+                session.user.id,
+                session.user.email || '',
+                session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuário'
+              );
+            }
+            
             if (profile) {
               setUser({
                 id: session.user.id,
@@ -80,7 +122,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       
       if (session?.user) {
-        fetchUserProfile(session.user.id).then(profile => {
+        fetchUserProfile(session.user.id).then(async (profile) => {
+          // Se não encontrou perfil, criar um novo
+          if (!profile) {
+            console.log('Perfil não encontrado na sessão inicial, criando novo...');
+            profile = await createUserProfile(
+              session.user.id,
+              session.user.email || '',
+              session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuário'
+            );
+          }
+          
           if (profile) {
             setUser({
               id: session.user.id,
