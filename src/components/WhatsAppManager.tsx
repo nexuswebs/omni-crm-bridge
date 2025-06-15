@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,11 @@ export const WhatsAppManager = () => {
     connected: false,
     isLoading: false
   });
+
+  // Configurações adicionais
+  const [apiUrl, setApiUrl] = useState('');
+  const [globalApiKey, setGlobalApiKey] = useState('');
+  const [webhookUrl, setWebhookUrl] = useState('');
 
   const [instances, setInstances] = useState([
     {
@@ -304,7 +310,7 @@ export const WhatsAppManager = () => {
   };
 
   const handleSaveConfig = () => {
-    if (!apiUrl || !globalApiKey) {
+    if (!evolutionConfig.serverUrl || !evolutionConfig.globalApiKey) {
       toast({
         title: "Campos obrigatórios",
         description: "Preencha a URL da API e a chave global.",
@@ -313,7 +319,11 @@ export const WhatsAppManager = () => {
       return;
     }
 
-    console.log('Salvando configurações Evolution API:', { apiUrl, globalApiKey: '***', webhookUrl });
+    console.log('Salvando configurações Evolution API:', { 
+      serverUrl: evolutionConfig.serverUrl, 
+      globalApiKey: '***', 
+      webhookUrl 
+    });
     
     toast({
       title: "Configurações salvas!",
@@ -322,7 +332,7 @@ export const WhatsAppManager = () => {
   };
 
   const handleTestConnection = () => {
-    if (!apiUrl || !globalApiKey) {
+    if (!evolutionConfig.serverUrl || !evolutionConfig.globalApiKey) {
       toast({
         title: "Campos obrigatórios",
         description: "Preencha a URL da API e a chave global antes de testar.",
@@ -349,7 +359,7 @@ export const WhatsAppManager = () => {
 
   const handleExportConfig = () => {
     const config = {
-      apiUrl,
+      serverUrl: evolutionConfig.serverUrl,
       webhookUrl,
       instances: instances.map(i => ({
         name: i.name,
@@ -815,6 +825,8 @@ export const WhatsAppManager = () => {
                 <Label htmlFor="webhook-base-url">URL Base do Webhook</Label>
                 <Input
                   id="webhook-base-url"
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
                   placeholder="https://seu-crm.com/api/webhook/whatsapp"
                 />
               </div>
@@ -838,7 +850,7 @@ export const WhatsAppManager = () => {
                 </div>
               </div>
 
-              <Button className="w-full bg-gradient-primary">
+              <Button onClick={handleSaveConfig} className="w-full bg-gradient-primary">
                 Salvar Configurações de Webhook
               </Button>
             </CardContent>
