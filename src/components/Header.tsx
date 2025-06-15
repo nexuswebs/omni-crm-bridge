@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { UserProfileModal } from '@/components/UserProfileModal';
 import { useState } from 'react';
 
 const NotificationsPanel = ({ onClose }: { onClose: () => void }) => {
@@ -66,57 +67,6 @@ const NotificationsPanel = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
-const UserProfilePanel = ({ onClose }: { onClose: () => void }) => {
-  const { user, logout } = useAuth();
-  
-  return (
-    <div className="w-80 p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">Perfil do Usuário</h3>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          Fechar
-        </Button>
-      </div>
-      
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center">
-            <User className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <p className="font-medium">{user?.name}</p>
-            <p className="text-sm text-muted-foreground">{user?.email}</p>
-            <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
-          </div>
-        </div>
-        
-        <div className="border-t pt-4 space-y-2">
-          <Button variant="outline" className="w-full justify-start">
-            <User className="w-4 h-4 mr-2" />
-            Editar Perfil
-          </Button>
-          <Button variant="outline" className="w-full justify-start">
-            Alterar Senha
-          </Button>
-          <Button variant="outline" className="w-full justify-start">
-            Preferências
-          </Button>
-        </div>
-        
-        <div className="border-t pt-4">
-          <Button 
-            variant="destructive" 
-            className="w-full"
-            onClick={logout}
-          >
-            Sair do Sistema
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 export const Header = () => {
   const { user } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -151,22 +101,23 @@ export const Header = () => {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={showProfile} onOpenChange={setShowProfile}>
-          <DialogTrigger asChild>
-            <div className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors">
-              <div className="text-right">
-                <p className="text-sm font-medium">{user?.name}</p>
-                <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center">
-                <User className="h-4 w-4 text-white" />
-              </div>
-            </div>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <UserProfilePanel onClose={() => setShowProfile(false)} />
-          </DialogContent>
-        </Dialog>
+        <div 
+          className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
+          onClick={() => setShowProfile(true)}
+        >
+          <div className="text-right">
+            <p className="text-sm font-medium">{user?.name}</p>
+            <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+          </div>
+          <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center">
+            <User className="h-4 w-4 text-white" />
+          </div>
+        </div>
+
+        <UserProfileModal 
+          open={showProfile} 
+          onClose={() => setShowProfile(false)} 
+        />
       </div>
     </header>
   );
