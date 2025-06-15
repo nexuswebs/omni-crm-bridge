@@ -1,7 +1,7 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { evolutionApi } from '@/services/evolutionApi';
+import { createEvolutionApiService } from '@/services/evolutionApi';
+import { useEvolutionApiStorage } from '@/hooks/useEvolutionApiStorage';
 
 interface WhatsAppInstance {
   id: string;
@@ -21,8 +21,14 @@ interface WhatsAppInstance {
 
 export const useWhatsAppInstances = () => {
   const { toast } = useToast();
+  const { config } = useEvolutionApiStorage();
   const [instances, setInstances] = useState<WhatsAppInstance[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Criar serviço da Evolution API com configurações atuais
+  const getEvolutionApiService = () => {
+    return createEvolutionApiService(config.url, config.key);
+  };
 
   const createInstance = async (instanceName: string) => {
     if (!instanceName.trim()) {
@@ -34,17 +40,27 @@ export const useWhatsAppInstances = () => {
       return false;
     }
 
+    if (!config.connected) {
+      toast({
+        title: "Evolution API não conectada",
+        description: "Configure e conecte a Evolution API primeiro.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     setIsLoading(true);
     try {
       console.log('Criando instância:', instanceName);
       
-      const response = await evolutionApi.createInstance(instanceName);
+      const evolutionService = getEvolutionApiService();
+      const response = await evolutionService.createInstance(instanceName, config.webhookUrl);
       
       const newInstance: WhatsAppInstance = {
         id: instanceName,
         name: instanceName,
         status: 'disconnected',
-        webhook: 'https://webhook.site/unique-id',
+        webhook: config.webhookUrl,
         autoReply: false,
         autoReplyMessage: 'Obrigado pela mensagem! Retornaremos em breve.',
         businessHours: {
@@ -78,7 +94,8 @@ export const useWhatsAppInstances = () => {
   const deleteInstance = async (instanceId: string) => {
     try {
       setIsLoading(true);
-      await evolutionApi.deleteInstance(instanceId);
+      const evolutionService = getEvolutionApiService();
+      await evolutionService.deleteInstance(instanceId);
       
       setInstances(prev => prev.filter(instance => instance.id !== instanceId));
       toast({
@@ -102,8 +119,9 @@ export const useWhatsAppInstances = () => {
     try {
       console.log('Conectando instância:', instanceId);
       
-      const connectResponse = await evolutionApi.connectInstance(instanceId);
-      const qrResponse = await evolutionApi.getQRCode(instanceId);
+      const evolutionService = getEvolutionApiService();
+      const connectResponse = await evolutionService.connectInstance(instanceId);
+      const qrResponse = await evolutionService.getQRCode(instanceId);
       
       setInstances(prevInstances => {
         return prevInstances.map(instance => {
@@ -125,7 +143,7 @@ export const useWhatsAppInstances = () => {
 
       const statusInterval = setInterval(async () => {
         try {
-          const status = await evolutionApi.getInstanceStatus(instanceId);
+          const status = await evolutionService.getInstanceStatus(instanceId);
           if (status?.instance?.state === 'open') {
             setInstances(prev => prev.map(inst => 
               inst.id === instanceId 
@@ -160,7 +178,8 @@ export const useWhatsAppInstances = () => {
   const disconnectInstance = async (instanceId: string) => {
     setIsLoading(true);
     try {
-      await evolutionApi.logoutInstance(instanceId);
+      const evolutionService = getEvolutionApiService();
+      await evolutionService.logoutInstance(instanceId);
 
       setInstances(prevInstances => {
         return prevInstances.map(instance => {
@@ -199,7 +218,8 @@ export const useWhatsAppInstances = () => {
 
     setIsLoading(true);
     try {
-      await evolutionApi.sendMessage(instanceId, phone, message);
+      const evolutionService = getEvolutionApiService();
+      await evolutionService.sendMessage(instanceId, phone, message);
 
       toast({
         title: "Mensagem enviada!",

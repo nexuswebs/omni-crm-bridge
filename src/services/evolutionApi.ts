@@ -1,4 +1,3 @@
-
 interface EvolutionApiConfig {
   baseUrl: string;
   apiKey: string;
@@ -52,19 +51,10 @@ export class EvolutionApiService {
   }
 
   async createInstance(instanceName: string, webhook?: string): Promise<InstanceResponse> {
-    // Payload simplificado conforme documentação oficial
-    const payload: CreateInstanceRequest = {
+    // Payload simplificado - apenas os campos essenciais
+    const payload = {
       instanceName,
-      integration: 'WHATSAPP-BAILEYS',
-      qrcode: true,
-      webhook: webhook || 'https://webhook.site/unique-id',
-      events: [
-        'APPLICATION_STARTUP',
-        'QRCODE_UPDATED', 
-        'CONNECTION_UPDATE',
-        'MESSAGES_UPSERT',
-        'SEND_MESSAGE'
-      ]
+      webhook: webhook || 'https://webhook.site/unique-id'
     };
 
     console.log('Criando instância Evolution API:', { instanceName, payload });
@@ -239,7 +229,12 @@ export class EvolutionApiService {
   }
 }
 
-// Instância singleton da API Evolution
+// Função para criar uma instância configurável da Evolution API
+export const createEvolutionApiService = (baseUrl: string, apiKey: string) => {
+  return new EvolutionApiService({ baseUrl, apiKey });
+};
+
+// Instância padrão para compatibilidade
 export const evolutionApi = new EvolutionApiService({
   baseUrl: 'https://api.redenexus.top',
   apiKey: 'e5fe045f841bddf5406357ebea55ea2b'

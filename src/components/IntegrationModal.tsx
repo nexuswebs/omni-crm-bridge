@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useEvolutionApiStorage } from '@/hooks/useEvolutionApiStorage';
-import { evolutionApi } from '@/services/evolutionApi';
+import { EvolutionApiService } from '@/services/evolutionApi';
 
 interface IntegrationModalProps {
   isOpen: boolean;
@@ -21,13 +21,6 @@ export const IntegrationModal = ({ isOpen, onClose, integration, onSave }: Integ
   const { config, updateConfig } = useEvolutionApiStorage();
   const [isLoading, setIsLoading] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
-
-  // Inicializar com dados salvos quando abrir o modal
-  useEffect(() => {
-    if (isOpen && integration?.name === 'Evolution API') {
-      // Os dados já vêm do hook useEvolutionApiStorage
-    }
-  }, [isOpen, integration]);
 
   const handleTestConnection = async () => {
     if (!config.url || !config.key) {
@@ -43,8 +36,8 @@ export const IntegrationModal = ({ isOpen, onClose, integration, onSave }: Integ
     console.log('Testando conexão Evolution API:', { url: config.url, key: '***' });
 
     try {
-      // Usar o serviço real da Evolution API
-      const tempService = new (require('@/services/evolutionApi').EvolutionApiService)({
+      // Criar uma instância do serviço com as configurações atuais
+      const evolutionService = new EvolutionApiService({
         baseUrl: config.url,
         apiKey: config.key
       });
@@ -58,7 +51,12 @@ export const IntegrationModal = ({ isOpen, onClose, integration, onSave }: Integ
         }
       });
 
+      console.log('Resposta da API:', response.status, response.statusText);
+
       if (response.ok) {
+        const data = await response.json();
+        console.log('Dados recebidos:', data);
+        
         updateConfig({ 
           connected: true, 
           status: 'connected' 
@@ -69,6 +67,8 @@ export const IntegrationModal = ({ isOpen, onClose, integration, onSave }: Integ
           description: "Evolution API conectada com sucesso.",
         });
       } else {
+        const errorText = await response.text();
+        console.error('Erro HTTP:', response.status, errorText);
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
@@ -81,7 +81,7 @@ export const IntegrationModal = ({ isOpen, onClose, integration, onSave }: Integ
       
       toast({
         title: "Erro na conexão",
-        description: "Verifique a URL e a chave da API. Certifique-se de que a Evolution API está rodando.",
+        description: error instanceof Error ? error.message : "Verifique a URL e a chave da API.",
         variant: "destructive",
       });
     } finally {
