@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { evolutionApi } from '@/services/evolutionApi';
 import { 
   Smartphone, 
   QrCode, 
@@ -45,22 +46,7 @@ interface WhatsAppInstance {
 export const WhatsAppManager = () => {
   const { toast } = useToast();
   
-  const [instances, setInstances] = useState<WhatsAppInstance[]>([
-    {
-      id: '1',
-      name: 'Instância Principal',
-      status: 'disconnected',
-      webhook: 'https://seu-crm.com/webhook/whatsapp',
-      autoReply: false,
-      autoReplyMessage: 'Obrigado pela mensagem! Retornaremos em breve.',
-      businessHours: {
-        enabled: false,
-        start: '09:00',
-        end: '18:00'
-      }
-    }
-  ]);
-
+  const [instances, setInstances] = useState<WhatsAppInstance[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [newInstanceName, setNewInstanceName] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -69,38 +55,24 @@ export const WhatsAppManager = () => {
   const [testMessage, setTestMessage] = useState('');
   const [testPhone, setTestPhone] = useState('');
 
-  useEffect(() => {
-    // Simular atualização do status da instância a cada 10 segundos
-    const intervalId = setInterval(() => {
-      setInstances(prevInstances => {
-        return prevInstances.map(instance => {
-          if (instance.status === 'disconnected') {
-            return { ...instance, status: 'disconnected' };
-          } else if (instance.status === 'connecting') {
-            // Simula a transição para 'qr_ready' ou 'connected'
-            const randomStatus = Math.random() > 0.5 ? 'qr_ready' : 'connected';
-            return { ...instance, status: randomStatus, phone: '+5511999999999' };
-          } else if (instance.status === 'qr_ready') {
-            // Permanece em 'qr_ready' até ser conectado
-            return instance;
-          } else {
-            return instance;
-          }
-        });
-      });
-    }, 10000);
-
-    return () => clearInterval(intervalId);
-  }, []);
-
   const handleCreateInstance = async () => {
+    if (!newInstanceName.trim()) {
+      toast({
+        title: "Nome obrigatório",
+        description: "Digite um nome para a instância.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // Simular a criação de uma nova instância
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
+      console.log('Criando instância real:', newInstanceName);
+      
+      const response = await evolutionApi.createInstance(newInstanceName);
+      
       const newInstance: WhatsAppInstance = {
-        id: Date.now().toString(),
+        id: newInstanceName,
         name: newInstanceName,
         status: 'disconnected',
         webhook: 'https://seu-crm.com/webhook/whatsapp',
@@ -119,12 +91,13 @@ export const WhatsAppManager = () => {
 
       toast({
         title: "Instância criada!",
-        description: "A instância WhatsApp foi criada com sucesso.",
+        description: `A instância ${newInstanceName} foi criada com sucesso na Evolution API.`,
       });
     } catch (error) {
+      console.error('Erro ao criar instância:', error);
       toast({
         title: "Erro ao criar instância",
-        description: "Houve um problema ao criar a instância.",
+        description: error instanceof Error ? error.message : "Erro desconhecido ao criar instância.",
         variant: "destructive",
       });
     } finally {
@@ -132,37 +105,82 @@ export const WhatsAppManager = () => {
     }
   };
 
-  const handleDeleteInstance = (instanceId: string) => {
-    setInstances(prev => prev.filter(instance => instance.id !== instanceId));
-    toast({
-      title: "Instância removida!",
-      description: "A instância WhatsApp foi removida.",
-    });
+  const handleDeleteInstance = async (instanceId: string) => {
+    try {
+      setIsLoading(true);
+      await evolutionApi.deleteInstance(instanceId);
+      
+      setInstances(prev => prev.filter(instance => instance.id !== instanceId));
+      toast({
+        title: "Instância removida!",
+        description: "A instância WhatsApp foi removida da Evolution API.",
+      });
+    } catch (error) {
+      console.error('Erro ao deletar instância:', error);
+      toast({
+        title: "Erro ao deletar",
+        description: error instanceof Error ? error.message : "Erro ao deletar instância.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleConnectInstance = async (instanceId: string) => {
     setIsLoading(true);
     try {
-      // Simular a conexão da instância
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
+      console.log('Conectando instância real:', instanceId);
+      
+      const response = await evolutionApi.connectInstance(instanceId);
+      
       setInstances(prevInstances => {
         return prevInstances.map(instance => {
           if (instance.id === instanceId) {
-            return { ...instance, status: 'connecting' };
+            return { 
+              ...instance, 
+              status: 'qr_ready',
+              qrCode: response.base64 || response.qrcode || 'qr-code-data'
+            };
           }
           return instance;
         });
       });
 
       toast({
-        title: "Conectando...",
-        description: "Aguarde enquanto a instância é conectada.",
+        title: "QR Code gerado!",
+        description: "Escaneie o QR Code com seu WhatsApp para conectar.",
       });
+
+      // Verificar status periodicamente
+      const statusInterval = setInterval(async () => {
+        try {
+          const status = await evolutionApi.getInstanceStatus(instanceId);
+          if (status?.instance?.state === 'open') {
+            setInstances(prev => prev.map(inst => 
+              inst.id === instanceId 
+                ? { ...inst, status: 'connected', phone: status.instance?.owner?.number || '+55 11 99999-9999' }
+                : inst
+            ));
+            clearInterval(statusInterval);
+            toast({
+              title: "WhatsApp Conectado!",
+              description: "Sua instância está pronta para enviar mensagens.",
+            });
+          }
+        } catch (error) {
+          console.error('Erro ao verificar status:', error);
+        }
+      }, 5000);
+
+      // Limpar interval após 2 minutos
+      setTimeout(() => clearInterval(statusInterval), 120000);
+
     } catch (error) {
+      console.error('Erro ao conectar instância:', error);
       toast({
         title: "Erro ao conectar",
-        description: "Houve um problema ao conectar a instância.",
+        description: error instanceof Error ? error.message : "Erro ao gerar QR Code.",
         variant: "destructive",
       });
     } finally {
@@ -173,13 +191,12 @@ export const WhatsAppManager = () => {
   const handleDisconnectInstance = async (instanceId: string) => {
     setIsLoading(true);
     try {
-      // Simular a desconexão da instância
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await evolutionApi.deleteInstance(instanceId);
 
       setInstances(prevInstances => {
         return prevInstances.map(instance => {
           if (instance.id === instanceId) {
-            return { ...instance, status: 'disconnected', phone: undefined };
+            return { ...instance, status: 'disconnected', phone: undefined, qrCode: undefined };
           }
           return instance;
         });
@@ -190,9 +207,10 @@ export const WhatsAppManager = () => {
         description: "A instância WhatsApp foi desconectada.",
       });
     } catch (error) {
+      console.error('Erro ao desconectar instância:', error);
       toast({
         title: "Erro ao desconectar",
-        description: "Houve um problema ao desconectar a instância.",
+        description: error instanceof Error ? error.message : "Erro ao desconectar instância.",
         variant: "destructive",
       });
     } finally {
@@ -201,19 +219,31 @@ export const WhatsAppManager = () => {
   };
 
   const handleSendTestMessage = async (instanceId: string) => {
+    if (!testPhone.trim() || !testMessage.trim()) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha o número e a mensagem.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // Simular o envio de mensagem de teste
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await evolutionApi.sendMessage(instanceId, testPhone, testMessage);
 
       toast({
         title: "Mensagem enviada!",
         description: `Mensagem de teste enviada para ${testPhone}.`,
       });
+      
+      setTestMessage('');
+      setTestPhone('');
     } catch (error) {
+      console.error('Erro ao enviar mensagem:', error);
       toast({
         title: "Erro ao enviar mensagem",
-        description: "Houve um problema ao enviar a mensagem de teste.",
+        description: error instanceof Error ? error.message : "Erro ao enviar mensagem de teste.",
         variant: "destructive",
       });
     } finally {
@@ -274,7 +304,7 @@ export const WhatsAppManager = () => {
             <Smartphone className="w-6 h-6" />
             Gerenciador WhatsApp
           </h2>
-          <p className="text-muted-foreground">Gerencie suas instâncias WhatsApp</p>
+          <p className="text-muted-foreground">Gerencie suas instâncias WhatsApp via Evolution API</p>
         </div>
         <Button 
           onClick={() => setShowCreateModal(true)}
@@ -302,13 +332,28 @@ export const WhatsAppManager = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* QR Code Display */}
-              {(instance.status === 'qr_ready' || instance.status === 'disconnected') && (
+              {instance.status === 'qr_ready' && instance.qrCode && (
+                <div className="text-center space-y-2">
+                  <div className="bg-white p-4 rounded-lg inline-block border">
+                    {instance.qrCode.startsWith('data:image') ? (
+                      <img src={instance.qrCode} alt="QR Code" className="w-32 h-32" />
+                    ) : (
+                      <QrCode className="w-32 h-32 mx-auto text-gray-400" />
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Escaneie o QR Code com seu WhatsApp
+                  </p>
+                </div>
+              )}
+
+              {instance.status === 'disconnected' && (
                 <div className="text-center space-y-2">
                   <div className="bg-white p-4 rounded-lg inline-block border">
                     <QrCode className="w-32 h-32 mx-auto text-gray-400" />
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Escaneie o QR Code com seu WhatsApp
+                    Clique em "Conectar" para gerar o QR Code
                   </p>
                 </div>
               )}
@@ -377,7 +422,7 @@ export const WhatsAppManager = () => {
                     <Button 
                       onClick={() => handleSendTestMessage(instance.id)}
                       size="sm"
-                      disabled={!testMessage.trim() || !testPhone.trim()}
+                      disabled={!testMessage.trim() || !testPhone.trim() || isLoading}
                     >
                       <Send className="w-4 h-4" />
                     </Button>
@@ -395,7 +440,7 @@ export const WhatsAppManager = () => {
           <DialogHeader>
             <DialogTitle>Nova Instância WhatsApp</DialogTitle>
             <DialogDescription>
-              Crie uma nova instância para conectar um número WhatsApp
+              Crie uma nova instância na Evolution API para conectar um número WhatsApp
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -405,7 +450,7 @@ export const WhatsAppManager = () => {
                 id="instance-name"
                 value={newInstanceName}
                 onChange={(e) => setNewInstanceName(e.target.value)}
-                placeholder="Ex: Vendas, Suporte, Marketing"
+                placeholder="Ex: vendas, suporte, marketing"
               />
             </div>
             <div className="flex gap-2">
