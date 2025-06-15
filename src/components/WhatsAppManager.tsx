@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -140,7 +141,7 @@ export const WhatsAppManager = () => {
             return { 
               ...instance, 
               status: 'qr_ready',
-              qrCode: response.base64 || response.qrcode || 'qr-code-data'
+              qrCode: response.qrcode?.base64 || response.qrcode?.code || 'qr-code-data'
             };
           }
           return instance;
