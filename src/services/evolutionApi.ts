@@ -54,16 +54,18 @@ export class EvolutionApiService {
   }
 
   async createInstance(instanceName: string, webhook?: string): Promise<InstanceResponse> {
+    // Seguindo a documentação oficial da Evolution API
     const payload: CreateInstanceRequest = {
       instanceName,
       integration: 'WHATSAPP-BAILEYS',
       qrcode: true,
       webhook: webhook || 'https://webhook.site/unique-id',
-      webhook_by_events: true,
+      webhook_by_events: false,
       webhook_base64: false,
       events: [
         'APPLICATION_STARTUP',
-        'QRCODE_UPDATED',
+        'QRCODE_UPDATED', 
+        'CONNECTION_UPDATE',
         'MESSAGES_UPSERT',
         'MESSAGES_UPDATE',
         'MESSAGES_DELETE',
@@ -79,14 +81,13 @@ export class EvolutionApiService {
         'GROUPS_UPSERT',
         'GROUP_UPDATE',
         'GROUP_PARTICIPANTS_UPDATE',
-        'CONNECTION_UPDATE',
         'LABELS_EDIT',
         'LABELS_ASSOCIATION',
         'CALL_UPSERT'
       ]
     };
 
-    console.log('Criando instância Evolution API:', { instanceName, url: this.config.baseUrl });
+    console.log('Criando instância Evolution API:', { instanceName, payload });
 
     const response = await fetch(`${this.config.baseUrl}/instance/create`, {
       method: 'POST',
@@ -205,6 +206,7 @@ export class EvolutionApiService {
   }
 
   async sendMessage(instanceName: string, number: string, message: string): Promise<any> {
+    // Seguindo a documentação para envio de mensagens
     const payload = {
       number: number,
       options: {
