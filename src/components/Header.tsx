@@ -7,7 +7,6 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 const NotificationsPanel = ({ onClose }: { onClose: () => void }) => {
   const notifications = [
@@ -120,20 +119,8 @@ const UserProfilePanel = ({ onClose }: { onClose: () => void }) => {
 
 export const Header = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-
-  const handleCreateWorkflow = () => {
-    navigate('/workflows');
-    // Trigger the workflow creation dialog after navigation
-    setTimeout(() => {
-      const createButton = document.querySelector('[data-create-workflow]') as HTMLButtonElement;
-      if (createButton) {
-        createButton.click();
-      }
-    }, 100);
-  };
 
   return (
     <header className="h-16 border-b border-border bg-card/50 backdrop-blur-sm flex items-center justify-between px-6">
@@ -148,13 +135,6 @@ export const Header = () => {
       </div>
 
       <div className="flex items-center gap-4">
-        <Button
-          className="bg-gradient-primary text-white"
-          onClick={handleCreateWorkflow}
-        >
-          Novo Workflow
-        </Button>
-        
         <ThemeToggle />
         
         <Dialog open={showNotifications} onOpenChange={setShowNotifications}>
