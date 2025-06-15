@@ -46,6 +46,20 @@ const Settings = () => {
   const [sslEnabled, setSslEnabled] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
 
+  // Estados para usuários e integrações
+  const [users, setUsers] = useState([
+    { id: 1, name: 'Admin User', email: 'admin@crm.com', role: 'admin', status: 'active' },
+    { id: 2, name: 'Ana Costa', email: 'ana@crm.com', role: 'agent', status: 'active' },
+    { id: 3, name: 'Carlos Silva', email: 'carlos@crm.com', role: 'agent', status: 'active' }
+  ]);
+
+  const [integrations, setIntegrations] = useState([
+    { name: 'n8n', status: 'connected', url: 'https://n8n.exemplo.com', key: 'n8n_***' },
+    { name: 'Evolution API', status: 'connected', url: 'https://api.evolution.com', key: 'evo_***' },
+    { name: 'OpenAI', status: 'connected', url: 'https://api.openai.com', key: 'sk-***' },
+    { name: 'Stripe', status: 'disconnected', url: '', key: '' }
+  ]);
+
   // Novos estados para modais
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
@@ -54,20 +68,6 @@ const Settings = () => {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
 
-  const users = [
-    { id: 1, name: 'Admin User', email: 'admin@crm.com', role: 'admin', status: 'active' },
-    { id: 2, name: 'Ana Costa', email: 'ana@crm.com', role: 'agent', status: 'active' },
-    { id: 3, name: 'Carlos Silva', email: 'carlos@crm.com', role: 'agent', status: 'active' }
-  ];
-
-  const integrations = [
-    { name: 'n8n', status: 'connected', url: 'https://n8n.exemplo.com', key: 'n8n_***' },
-    { name: 'Evolution API', status: 'connected', url: 'https://api.evolution.com', key: 'evo_***' },
-    { name: 'OpenAI', status: 'connected', url: 'https://api.openai.com', key: 'sk-***' },
-    { name: 'Stripe', status: 'disconnected', url: '', key: '' }
-  ];
-
-  // Funções para salvar configurações
   const handleSaveGeneral = () => {
     console.log('Salvando configurações gerais:', { companyName, systemEmail, timezone });
     toast({
@@ -685,19 +685,23 @@ const Settings = () => {
       </Tabs>
 
       {/* Modais */}
-      <UserModal
-        isOpen={userModalOpen}
-        onClose={() => setUserModalOpen(false)}
-        user={editingUser}
-        onSave={handleSaveUser}
-      />
+      {userModalOpen && (
+        <UserModal
+          isOpen={userModalOpen}
+          onClose={() => setUserModalOpen(false)}
+          user={editingUser}
+          onSave={handleSaveUser}
+        />
+      )}
 
-      <IntegrationModal
-        isOpen={integrationModalOpen}
-        onClose={() => setIntegrationModalOpen(false)}
-        integration={editingIntegration}
-        onSave={handleSaveIntegration}
-      />
+      {integrationModalOpen && editingIntegration && (
+        <IntegrationModal
+          isOpen={integrationModalOpen}
+          onClose={() => setIntegrationModalOpen(false)}
+          integration={editingIntegration}
+          onSave={handleSaveIntegration}
+        />
+      )}
 
       <ConfirmModal
         isOpen={confirmModalOpen}

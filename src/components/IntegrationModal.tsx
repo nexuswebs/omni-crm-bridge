@@ -16,18 +16,23 @@ interface Integration {
 interface IntegrationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  integration: Integration;
+  integration: Integration | null;
   onSave: (integration: Integration) => void;
 }
 
 export const IntegrationModal = ({ isOpen, onClose, integration, onSave }: IntegrationModalProps) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    url: integration.url,
-    key: integration.key,
+    url: integration?.url || '',
+    key: integration?.key || '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+
+  // Se não há integração, não renderiza o modal
+  if (!integration) {
+    return null;
+  }
 
   const handleTest = async () => {
     setIsTesting(true);
