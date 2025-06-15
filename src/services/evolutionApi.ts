@@ -1,3 +1,4 @@
+
 interface EvolutionApiConfig {
   baseUrl: string;
   apiKey: string;
@@ -5,10 +6,8 @@ interface EvolutionApiConfig {
 
 interface CreateInstanceRequest {
   instanceName: string;
-  integration?: string;
   qrcode?: boolean;
   webhook?: string;
-  events?: string[];
 }
 
 interface InstanceResponse {
@@ -51,11 +50,16 @@ export class EvolutionApiService {
   }
 
   async createInstance(instanceName: string, webhook?: string): Promise<InstanceResponse> {
-    // Payload simplificado - apenas os campos essenciais
-    const payload = {
+    // Payload minimalista - apenas campos obrigatórios
+    const payload: CreateInstanceRequest = {
       instanceName,
-      webhook: webhook || 'https://webhook.site/unique-id'
+      qrcode: true
     };
+
+    // Adicionar webhook apenas se fornecido
+    if (webhook) {
+      payload.webhook = webhook;
+    }
 
     console.log('Criando instância Evolution API:', { instanceName, payload });
 

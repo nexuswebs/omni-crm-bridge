@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { createEvolutionApiService } from '@/services/evolutionApi';
@@ -25,11 +26,6 @@ export const useWhatsAppInstances = () => {
   const [instances, setInstances] = useState<WhatsAppInstance[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Criar serviço da Evolution API com configurações atuais
-  const getEvolutionApiService = () => {
-    return createEvolutionApiService(config.url, config.key);
-  };
-
   const createInstance = async (instanceName: string) => {
     if (!instanceName.trim()) {
       toast({
@@ -40,10 +36,10 @@ export const useWhatsAppInstances = () => {
       return false;
     }
 
-    if (!config.connected) {
+    if (!config.connected || !config.url || !config.key) {
       toast({
-        title: "Evolution API não conectada",
-        description: "Configure e conecte a Evolution API primeiro.",
+        title: "Evolution API não configurada",
+        description: "Configure e conecte a Evolution API primeiro nas configurações.",
         variant: "destructive",
       });
       return false;
@@ -51,9 +47,13 @@ export const useWhatsAppInstances = () => {
 
     setIsLoading(true);
     try {
-      console.log('Criando instância:', instanceName);
+      console.log('Criando instância com configurações:', {
+        url: config.url,
+        instanceName,
+        webhook: config.webhookUrl
+      });
       
-      const evolutionService = getEvolutionApiService();
+      const evolutionService = createEvolutionApiService(config.url, config.key);
       const response = await evolutionService.createInstance(instanceName, config.webhookUrl);
       
       const newInstance: WhatsAppInstance = {
