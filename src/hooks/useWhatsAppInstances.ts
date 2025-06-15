@@ -1,4 +1,5 @@
 
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { createEvolutionApiService } from '@/services/evolutionApi';
@@ -94,7 +95,7 @@ export const useWhatsAppInstances = () => {
   const deleteInstance = async (instanceId: string) => {
     try {
       setIsLoading(true);
-      const evolutionService = getEvolutionApiService();
+      const evolutionService = createEvolutionApiService(config.url, config.key);
       await evolutionService.deleteInstance(instanceId);
       
       setInstances(prev => prev.filter(instance => instance.id !== instanceId));
@@ -119,7 +120,7 @@ export const useWhatsAppInstances = () => {
     try {
       console.log('Conectando instância:', instanceId);
       
-      const evolutionService = getEvolutionApiService();
+      const evolutionService = createEvolutionApiService(config.url, config.key);
       const connectResponse = await evolutionService.connectInstance(instanceId);
       const qrResponse = await evolutionService.getQRCode(instanceId);
       
@@ -178,7 +179,7 @@ export const useWhatsAppInstances = () => {
   const disconnectInstance = async (instanceId: string) => {
     setIsLoading(true);
     try {
-      const evolutionService = getEvolutionApiService();
+      const evolutionService = createEvolutionApiService(config.url, config.key);
       await evolutionService.logoutInstance(instanceId);
 
       setInstances(prevInstances => {
@@ -218,7 +219,7 @@ export const useWhatsAppInstances = () => {
 
     setIsLoading(true);
     try {
-      const evolutionService = getEvolutionApiService();
+      const evolutionService = createEvolutionApiService(config.url, config.key);
       await evolutionService.sendMessage(instanceId, phone, message);
 
       toast({
@@ -259,3 +260,4 @@ export const useWhatsAppInstances = () => {
 };
 
 export type { WhatsAppInstance };
+
