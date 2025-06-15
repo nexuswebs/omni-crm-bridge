@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -586,13 +585,7 @@ export const WhatsAppManager = () => {
                         size="sm" 
                         variant="outline" 
                         className="flex-1"
-                        onClick={() => {
-                          console.log('Configurando instância:', instance.name);
-                          toast({
-                            title: "Configuração de Instância",
-                            description: `Abrindo configurações para ${instance.name}`,
-                          });
-                        }}
+                        onClick={() => handleConfigureInstance(instance.id)}
                       >
                         <Settings className="w-4 h-4 mr-2" />
                         Configurar
