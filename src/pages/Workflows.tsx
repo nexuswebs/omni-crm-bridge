@@ -236,7 +236,10 @@ const Workflows = () => {
           
           <Dialog open={showEditor} onOpenChange={setShowEditor}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-primary text-white">
+              <Button 
+                className="bg-gradient-primary text-white"
+                data-create-workflow
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Criar Workflow
               </Button>
