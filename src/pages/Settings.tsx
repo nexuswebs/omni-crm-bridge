@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,8 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Settings as SettingsIcon, Users, Zap, Key, Database } from 'lucide-react';
+import { Settings as SettingsIcon, Users, Zap, Key, Database, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { UserModal } from '@/components/UserModal';
+import { IntegrationModal } from '@/components/IntegrationModal';
+import { ConfirmModal } from '@/components/ConfirmModal';
 
 const Settings = () => {
   const { toast } = useToast();
@@ -44,6 +46,14 @@ const Settings = () => {
   const [sslEnabled, setSslEnabled] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
 
+  // Novos estados para modais
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [integrationModalOpen, setIntegrationModalOpen] = useState(false);
+  const [editingIntegration, setEditingIntegration] = useState<any>(null);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
+
   const users = [
     { id: 1, name: 'Admin User', email: 'admin@crm.com', role: 'admin', status: 'active' },
     { id: 2, name: 'Ana Costa', email: 'ana@crm.com', role: 'agent', status: 'active' },
@@ -67,35 +77,62 @@ const Settings = () => {
   };
 
   const handleCreateUser = () => {
-    console.log('Criando novo usuário');
-    toast({
-      title: "Novo usuário",
-      description: "Funcionalidade de criar usuário será implementada.",
-    });
+    setEditingUser(null);
+    setUserModalOpen(true);
   };
 
   const handleEditUser = (userId: number) => {
-    console.log('Editando usuário:', userId);
-    toast({
-      title: "Editar usuário",
-      description: `Editando usuário ID: ${userId}`,
+    const user = users.find(u => u.id === userId);
+    setEditingUser(user);
+    setUserModalOpen(true);
+  };
+
+  const handleSaveUser = (userData: any) => {
+    if (editingUser) {
+      setUsers(users.map(u => u.id === editingUser.id ? { ...userData, id: editingUser.id } : u));
+    } else {
+      setUsers([...users, { ...userData, id: Date.now() }]);
+    }
+  };
+
+  const handleDeleteUser = (userId: number) => {
+    setConfirmAction(() => () => {
+      setUsers(users.filter(u => u.id !== userId));
+      toast({
+        title: "Usuário removido",
+        description: "O usuário foi removido com sucesso.",
+      });
     });
+    setConfirmModalOpen(true);
   };
 
   const handleConfigureIntegration = (integrationName: string) => {
-    console.log('Configurando integração:', integrationName);
-    toast({
-      title: "Configurar integração",
-      description: `Configurando ${integrationName}`,
-    });
+    const integration = integrations.find(i => i.name === integrationName);
+    if (integration) {
+      setEditingIntegration(integration);
+      setIntegrationModalOpen(true);
+    }
   };
 
-  const handleTestIntegration = (integrationName: string) => {
-    console.log('Testando integração:', integrationName);
+  const handleSaveIntegration = (integrationData: any) => {
+    setIntegrations(integrations.map(i => 
+      i.name === integrationData.name ? integrationData : i
+    ));
+  };
+
+  const handleTestIntegration = async (integrationName: string) => {
     toast({
       title: "Testando integração",
-      description: `Testando conexão com ${integrationName}`,
+      description: `Testando conexão com ${integrationName}...`,
     });
+    
+    // Simular teste
+    setTimeout(() => {
+      toast({
+        title: "Teste concluído",
+        description: `Conexão com ${integrationName} está funcionando.`,
+      });
+    }, 2000);
   };
 
   const handleGenerateApiKey = () => {
@@ -324,9 +361,19 @@ const Settings = () => {
                       <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
                         {user.status === 'active' ? 'Ativo' : 'Inativo'}
                       </Badge>
-                      <Button size="sm" variant="outline" onClick={() => handleEditUser(user.id)}>
-                        Editar
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => handleEditUser(user.id)}>
+                          Editar
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -636,6 +683,33 @@ const Settings = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Modais */}
+      <UserModal
+        isOpen={userModalOpen}
+        onClose={() => setUserModalOpen(false)}
+        user={editingUser}
+        onSave={handleSaveUser}
+      />
+
+      <IntegrationModal
+        isOpen={integrationModalOpen}
+        onClose={() => setIntegrationModalOpen(false)}
+        integration={editingIntegration}
+        onSave={handleSaveIntegration}
+      />
+
+      <ConfirmModal
+        isOpen={confirmModalOpen}
+        onClose={() => setConfirmModalOpen(false)}
+        onConfirm={() => {
+          confirmAction();
+          setConfirmModalOpen(false);
+        }}
+        title="Confirmar ação"
+        description="Tem certeza que deseja continuar? Esta ação não pode ser desfeita."
+        variant="destructive"
+      />
     </div>
   );
 };
