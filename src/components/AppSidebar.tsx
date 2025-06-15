@@ -58,13 +58,17 @@ export const AppSidebar = () => {
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-            <span className="text-white font-bold text-sm">CRM</span>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center">
+            <img 
+              src="/lovable-uploads/c6d44030-5c90-4b0a-a929-4224d423ff2a.png" 
+              alt="Nexus Agents Logo" 
+              className="w-full h-full object-contain"
+            />
           </div>
           <div>
-            <h2 className="font-bold text-lg">CRM Inteligente</h2>
-            <p className="text-xs text-muted-foreground">n8n + IA</p>
+            <h2 className="font-bold text-lg">Nexus Agents</h2>
+            <p className="text-xs text-muted-foreground">Automating Tomorrow</p>
           </div>
         </div>
       </SidebarHeader>
