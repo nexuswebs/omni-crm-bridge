@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,14 +15,26 @@ interface N8nConnectionProps {
 
 export const N8nConnection = ({ onClose }: N8nConnectionProps) => {
   const { toast } = useToast();
-  const [connectionData, setConnectionData] = useState({
-    baseUrl: 'https://n8n.seu-dominio.com',
-    apiKey: '',
-    webhookUrl: 'https://n8n.seu-dominio.com/webhook',
-    connected: false,
-    version: '',
-    instanceInfo: null as any,
-    autoSync: false
+  
+  // Carregar dados salvos do localStorage
+  const [connectionData, setConnectionData] = useState(() => {
+    const saved = localStorage.getItem('n8n-connection');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (error) {
+        console.error('Erro ao carregar dados salvos do n8n:', error);
+      }
+    }
+    return {
+      baseUrl: 'https://n8n.seu-dominio.com',
+      apiKey: '',
+      webhookUrl: 'https://n8n.seu-dominio.com/webhook',
+      connected: false,
+      version: '',
+      instanceInfo: null as any,
+      autoSync: false
+    };
   });
 
   const [testResults, setTestResults] = useState({
@@ -34,6 +45,11 @@ export const N8nConnection = ({ onClose }: N8nConnectionProps) => {
 
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Salvar dados no localStorage sempre que connectionData mudar
+  useEffect(() => {
+    localStorage.setItem('n8n-connection', JSON.stringify(connectionData));
+  }, [connectionData]);
 
   const handleTestConnection = async () => {
     if (!connectionData.baseUrl || !connectionData.apiKey) {
@@ -53,11 +69,19 @@ export const N8nConnection = ({ onClose }: N8nConnectionProps) => {
       description: "Verificando conectividade com n8n",
     });
 
-    // Simular teste de conexão
-    setTimeout(() => {
-      const success = Math.random() > 0.2; // 80% chance de sucesso
-      
-      if (success) {
+    try {
+      // Teste real da API do n8n
+      const response = await fetch(`${connectionData.baseUrl}/rest/workflows`, {
+        method: 'GET',
+        headers: {
+          'X-N8N-API-KEY': connectionData.apiKey,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        const workflows = await response.json();
+        
         setTestResults({
           connection: 'success',
           webhooks: 'success',
@@ -69,32 +93,36 @@ export const N8nConnection = ({ onClose }: N8nConnectionProps) => {
           connected: true,
           version: '1.19.4',
           instanceInfo: {
-            workflows: 12,
+            workflows: workflows.length || 0,
             executions: 1547,
-            activeWorkflows: 8
+            activeWorkflows: workflows.filter((w: any) => w.active).length || 0
           }
         });
 
         toast({
           title: "Conexão estabelecida!",
-          description: "n8n conectado com sucesso.",
+          description: `n8n conectado com sucesso. ${workflows.length} workflows encontrados.`,
         });
       } else {
-        setTestResults({
-          connection: 'error',
-          webhooks: 'error',
-          workflows: 'error'
-        });
-        
-        toast({
-          title: "Erro na conexão",
-          description: "Não foi possível conectar ao n8n. Verifique as credenciais.",
-          variant: "destructive",
-        });
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+    } catch (error) {
+      console.error('Erro na conexão n8n:', error);
       
+      setTestResults({
+        connection: 'error',
+        webhooks: 'error',
+        workflows: 'error'
+      });
+      
+      toast({
+        title: "Erro na conexão",
+        description: error instanceof Error ? error.message : "Erro desconhecido ao conectar com n8n.",
+        variant: "destructive",
+      });
+    } finally {
       setIsTestingConnection(false);
-    }, 2000);
+    }
   };
 
   const handleSaveConnection = () => {
@@ -114,9 +142,10 @@ export const N8nConnection = ({ onClose }: N8nConnectionProps) => {
       autoSync: connectionData.autoSync
     });
     
+    // Os dados já são salvos automaticamente pelo useEffect
     toast({
       title: "Configurações salvas!",
-      description: "Conexão com n8n configurada com sucesso.",
+      description: "Conexão com n8n configurada e salva com sucesso.",
     });
   };
 

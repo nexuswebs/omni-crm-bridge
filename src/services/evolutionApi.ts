@@ -6,7 +6,7 @@ interface EvolutionApiConfig {
 
 interface CreateInstanceRequest {
   instanceName: string;
-  token?: string;
+  integration?: string;
   qrcode?: boolean;
   webhook?: string;
   webhook_by_events?: boolean;
@@ -56,6 +56,7 @@ export class EvolutionApiService {
   async createInstance(instanceName: string, webhook?: string): Promise<InstanceResponse> {
     const payload: CreateInstanceRequest = {
       instanceName,
+      integration: 'WHATSAPP-BAILEYS', // OBRIGATÓRIO para Evolution API
       qrcode: true,
       webhook: webhook || 'https://seu-crm.com/webhook/whatsapp',
       webhook_by_events: true,
