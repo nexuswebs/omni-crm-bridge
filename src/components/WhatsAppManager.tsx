@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Smartphone, MessageSquare, Settings, Send, Users, BarChart3, Wifi, Key, Globe, QrCode, Plus, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -27,6 +28,10 @@ export const WhatsAppManager = () => {
   const [globalApiKey, setGlobalApiKey] = useState('');
   const [webhookUrl, setWebhookUrl] = useState('');
 
+  // Modal de configuração da instância
+  const [configModalOpen, setConfigModalOpen] = useState(false);
+  const [selectedInstanceForConfig, setSelectedInstanceForConfig] = useState<any>(null);
+
   const [instances, setInstances] = useState([
     {
       id: 1,
@@ -35,7 +40,18 @@ export const WhatsAppManager = () => {
       status: 'connected',
       qrCode: '',
       webhook: 'https://seu-webhook.com/whatsapp',
-      autoReply: true
+      autoReply: true,
+      autoReplyMessage: 'Olá! Obrigado pela sua mensagem. Em breve retornaremos o contato.',
+      businessHours: {
+        enabled: false,
+        start: '09:00',
+        end: '18:00'
+      },
+      events: {
+        messageReceived: true,
+        messageSent: true,
+        connectionUpdate: true
+      }
     },
     {
       id: 2,
@@ -44,7 +60,18 @@ export const WhatsAppManager = () => {
       status: 'disconnected',
       qrCode: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg',
       webhook: 'https://seu-webhook.com/vendas',
-      autoReply: false
+      autoReply: false,
+      autoReplyMessage: '',
+      businessHours: {
+        enabled: false,
+        start: '09:00',
+        end: '18:00'
+      },
+      events: {
+        messageReceived: true,
+        messageSent: false,
+        connectionUpdate: true
+      }
     }
   ]);
 
@@ -146,7 +173,18 @@ export const WhatsAppManager = () => {
           status: 'creating',
           qrCode: '',
           webhook: `https://seu-webhook.com/${newInstanceName.toLowerCase()}`,
-          autoReply: false
+          autoReply: false,
+          autoReplyMessage: '',
+          businessHours: {
+            enabled: false,
+            start: '09:00',
+            end: '18:00'
+          },
+          events: {
+            messageReceived: true,
+            messageSent: true,
+            connectionUpdate: true
+          }
         };
 
         setInstances(prev => [...prev, newInstance]);
@@ -283,10 +321,25 @@ export const WhatsAppManager = () => {
 
   const handleConfigureInstance = (instanceId: number) => {
     const instance = instances.find(i => i.id === instanceId);
-    console.log('Configurando instância:', instance?.name);
+    if (instance) {
+      setSelectedInstanceForConfig(instance);
+      setConfigModalOpen(true);
+    }
+  };
+
+  const handleSaveInstanceConfig = () => {
+    if (!selectedInstanceForConfig) return;
+
+    setInstances(prev => prev.map(inst => 
+      inst.id === selectedInstanceForConfig.id 
+        ? { ...inst, ...selectedInstanceForConfig }
+        : inst
+    ));
+
+    setConfigModalOpen(false);
     toast({
-      title: "Configuração de Instância",
-      description: `Abrindo configurações para ${instance?.name}`,
+      title: "Configurações salvas!",
+      description: `Configurações da instância ${selectedInstanceForConfig.name} foram atualizadas.`,
     });
   };
 
@@ -472,413 +525,622 @@ export const WhatsAppManager = () => {
   };
 
   return (
-    <Tabs defaultValue="instances" className="w-full">
-      <TabsList className="grid w-full grid-cols-5">
-        <TabsTrigger value="instances">Instâncias</TabsTrigger>
-        <TabsTrigger value="conversations">Conversas</TabsTrigger>
-        <TabsTrigger value="bulk">Envio em Massa</TabsTrigger>
-        <TabsTrigger value="reports">Relatórios</TabsTrigger>
-        <TabsTrigger value="config">Configurações</TabsTrigger>
-      </TabsList>
+    <>
+      <Tabs defaultValue="instances" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="instances">Instâncias</TabsTrigger>
+          <TabsTrigger value="conversations">Conversas</TabsTrigger>
+          <TabsTrigger value="bulk">Envio em Massa</TabsTrigger>
+          <TabsTrigger value="reports">Relatórios</TabsTrigger>
+          <TabsTrigger value="config">Configurações</TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="instances">
-        <div className="space-y-6">
-          {/* Criar Nova Instância */}
-          <Card className="border-0 bg-card/50 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="w-5 h-5" />
-                Criar Nova Instância
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Nome da nova instância"
-                  value={newInstanceName}
-                  onChange={(e) => setNewInstanceName(e.target.value)}
-                />
-                <Button 
-                  onClick={handleCreateInstance}
-                  disabled={!evolutionConfig.connected}
-                  className="bg-gradient-primary"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Criar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="instances">
+          <div className="space-y-6">
+            {/* Criar Nova Instância */}
+            <Card className="border-0 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Criar Nova Instância
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Nome da nova instância"
+                    value={newInstanceName}
+                    onChange={(e) => setNewInstanceName(e.target.value)}
+                  />
+                  <Button 
+                    onClick={handleCreateInstance}
+                    disabled={!evolutionConfig.connected}
+                    className="bg-gradient-primary"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Criar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Lista de Instâncias */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {instances.map((instance) => (
-              <Card key={instance.id} className="border-0 bg-card/50 backdrop-blur-sm">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-primary flex items-center justify-center text-white">
-                        <Smartphone className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <CardTitle>{instance.name}</CardTitle>
-                        <CardDescription>{instance.phone || 'Não conectado'}</CardDescription>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${getStatusColor(instance.status)}`} />
-                      <Badge variant={instance.status === 'connected' ? 'default' : 'secondary'}>
-                        {getStatusLabel(instance.status)}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Webhook:</span>
-                        <p className="font-medium truncate">{instance.webhook}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Auto Reply:</span>
-                        <p className="font-medium">{instance.autoReply ? 'Ativo' : 'Inativo'}</p>
-                      </div>
-                    </div>
-
-                    {/* QR Code para instâncias não conectadas */}
-                    {(instance.status === 'qr_ready' || (instance.status === 'disconnected' && instance.qrCode)) && (
-                      <div className="text-center space-y-2">
-                        <p className="text-sm text-muted-foreground">Escaneie o QR Code com seu WhatsApp:</p>
-                        <div className="w-48 h-48 bg-white mx-auto rounded border p-4">
-                          {instance.qrCode ? (
-                            <div className="w-full h-full bg-gray-100 rounded flex items-center justify-center">
-                              <QrCode className="w-32 h-32 text-gray-400" />
-                            </div>
-                          ) : (
-                            <div className="w-full h-full bg-gray-100 rounded flex items-center justify-center text-xs text-gray-500">
-                              Gerando QR Code...
-                            </div>
-                          )}
+            {/* Lista de Instâncias */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {instances.map((instance) => (
+                <Card key={instance.id} className="border-0 bg-card/50 backdrop-blur-sm">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-lg bg-gradient-primary flex items-center justify-center text-white">
+                          <Smartphone className="w-6 h-6" />
                         </div>
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleConnectInstance(instance.id)}
-                          disabled={instance.status === 'connecting'}
-                        >
-                          <RefreshCw className={`w-4 h-4 mr-2 ${instance.status === 'connecting' ? 'animate-spin' : ''}`} />
-                          {instance.status === 'connecting' ? 'Conectando...' : 'Atualizar Status'}
-                        </Button>
+                        <div>
+                          <CardTitle>{instance.name}</CardTitle>
+                          <CardDescription>{instance.phone || 'Não conectado'}</CardDescription>
+                        </div>
                       </div>
-                    )}
-
-                    {instance.status === 'connected' && (
-                      <div className="bg-green-50 p-3 rounded-lg">
-                        <p className="text-sm text-green-700">
-                          ✅ WhatsApp conectado e pronto para uso!
-                        </p>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${getStatusColor(instance.status)}`} />
+                        <Badge variant={instance.status === 'connected' ? 'default' : 'secondary'}>
+                          {getStatusLabel(instance.status)}
+                        </Badge>
                       </div>
-                    )}
-
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="flex-1"
-                        onClick={() => handleConfigureInstance(instance.id)}
-                      >
-                        <Settings className="w-4 h-4 mr-2" />
-                        Configurar
-                      </Button>
-                      
-                      {instance.status === 'connected' ? (
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          className="flex-1"
-                          onClick={() => handleDisconnectInstance(instance.id)}
-                        >
-                          Desconectar
-                        </Button>
-                      ) : (
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          className="flex-1"
-                          onClick={() => handleDeleteInstance(instance.id)}
-                        >
-                          Deletar
-                        </Button>
-                      )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Webhook:</span>
+                          <p className="font-medium truncate">{instance.webhook}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Auto Reply:</span>
+                          <p className="font-medium">{instance.autoReply ? 'Ativo' : 'Inativo'}</p>
+                        </div>
+                      </div>
+
+                      {/* QR Code para instâncias não conectadas */}
+                      {(instance.status === 'qr_ready' || (instance.status === 'disconnected' && instance.qrCode)) && (
+                        <div className="text-center space-y-2">
+                          <p className="text-sm text-muted-foreground">Escaneie o QR Code com seu WhatsApp:</p>
+                          <div className="w-48 h-48 bg-white mx-auto rounded border p-4">
+                            {instance.qrCode ? (
+                              <div className="w-full h-full bg-gray-100 rounded flex items-center justify-center">
+                                <QrCode className="w-32 h-32 text-gray-400" />
+                              </div>
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 rounded flex items-center justify-center text-xs text-gray-500">
+                                Gerando QR Code...
+                              </div>
+                            )}
+                          </div>
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleConnectInstance(instance.id)}
+                            disabled={instance.status === 'connecting'}
+                          >
+                            <RefreshCw className={`w-4 h-4 mr-2 ${instance.status === 'connecting' ? 'animate-spin' : ''}`} />
+                            {instance.status === 'connecting' ? 'Conectando...' : 'Atualizar Status'}
+                          </Button>
+                        </div>
+                      )}
+
+                      {instance.status === 'connected' && (
+                        <div className="bg-green-50 p-3 rounded-lg">
+                          <p className="text-sm text-green-700">
+                            ✅ WhatsApp conectado e pronto para uso!
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex-1"
+                          onClick={() => handleConfigureInstance(instance.id)}
+                        >
+                          <Settings className="w-4 h-4 mr-2" />
+                          Configurar
+                        </Button>
+                        
+                        {instance.status === 'connected' ? (
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            className="flex-1"
+                            onClick={() => handleDisconnectInstance(instance.id)}
+                          >
+                            Desconectar
+                          </Button>
+                        ) : (
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            className="flex-1"
+                            onClick={() => handleDeleteInstance(instance.id)}
+                          >
+                            Deletar
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
-        </div>
-      </TabsContent>
+        </TabsContent>
 
-      <TabsContent value="conversations">
-        <Card className="border-0 bg-card/50 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5" />
-              Conversas Ativas
-            </CardTitle>
-            <CardDescription>
-              Gerencie conversas em andamento
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex gap-4">
-                <Select value={selectedInstance.name} onValueChange={(value) => {
-                  const instance = instances.find(i => i.name === value);
-                  if (instance) setSelectedInstance(instance);
-                }}>
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Selecionar instância" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {instances.map((instance) => (
-                      <SelectItem key={instance.id} value={instance.name}>
-                        {instance.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Input
-                  placeholder="Número do destinatário"
-                  value={recipient}
-                  onChange={(e) => setRecipient(e.target.value)}
-                  className="flex-1"
-                />
-              </div>
-              
-              <Textarea
-                placeholder="Digite sua mensagem..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                rows={4}
-              />
-              
-              <Button onClick={handleSendMessage} className="bg-gradient-primary">
-                <Send className="w-4 h-4 mr-2" />
-                Enviar Mensagem
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="bulk">
-        <Card className="border-0 bg-card/50 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Send className="w-5 h-5" />
-              Envio em Massa
-            </CardTitle>
-            <CardDescription>
-              Envie mensagens para múltiplos contatos
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="recipients">Destinatários (um por linha)</Label>
-              <Textarea
-                id="recipients"
-                placeholder="5511999999999&#10;5511888888888&#10;5511777777777"
-                rows={6}
-                value={bulkRecipients}
-                onChange={(e) => setBulkRecipients(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="bulk-message">Mensagem</Label>
-              <Textarea
-                id="bulk-message"
-                placeholder="Digite sua mensagem aqui..."
-                rows={4}
-                value={bulkMessage}
-                onChange={(e) => setBulkMessage(e.target.value)}
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <Button className="bg-gradient-primary" onClick={handleBulkSend}>
-                <Send className="w-4 h-4 mr-2" />
-                Enviar para Todos
-              </Button>
-              <Button variant="outline" onClick={handleImportList}>
-                <Users className="w-4 h-4 mr-2" />
-                Importar Lista
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="reports">
-        <Card className="border-0 bg-card/50 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5" />
-              Relatórios
-            </CardTitle>
-            <CardDescription>
-              Analytics e métricas das suas instâncias
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-12">
-              <BarChart3 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Relatórios em desenvolvimento...</p>
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="config">
-        <div className="space-y-6">
-          {/* Configuração Evolution API */}
+        <TabsContent value="conversations">
           <Card className="border-0 bg-card/50 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Globe className="w-5 h-5" />
-                Configuração Evolution API
+                <MessageSquare className="w-5 h-5" />
+                Conversas Ativas
               </CardTitle>
               <CardDescription>
-                Configure a conexão com seu servidor Evolution API
+                Gerencie conversas em andamento
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex gap-4">
+                  <Select value={selectedInstance.name} onValueChange={(value) => {
+                    const instance = instances.find(i => i.name === value);
+                    if (instance) setSelectedInstance(instance);
+                  }}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Selecionar instância" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {instances.map((instance) => (
+                        <SelectItem key={instance.id} value={instance.name}>
+                          {instance.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Input
+                    placeholder="Número do destinatário"
+                    value={recipient}
+                    onChange={(e) => setRecipient(e.target.value)}
+                    className="flex-1"
+                  />
+                </div>
+                
+                <Textarea
+                  placeholder="Digite sua mensagem..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  rows={4}
+                />
+                
+                <Button onClick={handleSendMessage} className="bg-gradient-primary">
+                  <Send className="w-4 h-4 mr-2" />
+                  Enviar Mensagem
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="bulk">
+          <Card className="border-0 bg-card/50 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Send className="w-5 h-5" />
+                Envio em Massa
+              </CardTitle>
+              <CardDescription>
+                Envie mensagens para múltiplos contatos
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="server-url">URL do Servidor Evolution API</Label>
-                <Input
-                  id="server-url"
-                  value={evolutionConfig.serverUrl}
-                  onChange={(e) => setEvolutionConfig(prev => ({ ...prev, serverUrl: e.target.value }))}
-                  placeholder="http://sua-vps-ip:8080"
+                <Label htmlFor="recipients">Destinatários (um por linha)</Label>
+                <Textarea
+                  id="recipients"
+                  placeholder="5511999999999&#10;5511888888888&#10;5511777777777"
+                  rows={6}
+                  value={bulkRecipients}
+                  onChange={(e) => setBulkRecipients(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Exemplo: http://123.456.789.10:8080 ou https://evolution.seudominio.com
-                </p>
               </div>
 
               <div>
-                <Label htmlFor="global-api-key">Chave Global da API</Label>
-                <Input
-                  id="global-api-key"
-                  type="password"
-                  value={evolutionConfig.globalApiKey}
-                  onChange={(e) => setEvolutionConfig(prev => ({ ...prev, globalApiKey: e.target.value }))}
-                  placeholder="Digite sua chave global da Evolution API"
+                <Label htmlFor="bulk-message">Mensagem</Label>
+                <Textarea
+                  id="bulk-message"
+                  placeholder="Digite sua mensagem aqui..."
+                  rows={4}
+                  value={bulkMessage}
+                  onChange={(e) => setBulkMessage(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Esta é a chave definida na variável GLOBAL_API_KEY do seu servidor
-                </p>
               </div>
 
               <div className="flex gap-2">
-                <Button 
-                  onClick={handleTestEvolutionConnection}
-                  disabled={evolutionConfig.isLoading || !evolutionConfig.serverUrl || !evolutionConfig.globalApiKey}
-                  variant="outline"
-                >
-                  <Wifi className="w-4 h-4 mr-2" />
-                  {evolutionConfig.isLoading ? 'Testando...' : 'Testar Conexão'}
+                <Button className="bg-gradient-primary" onClick={handleBulkSend}>
+                  <Send className="w-4 h-4 mr-2" />
+                  Enviar para Todos
                 </Button>
-              </div>
-
-              <div className="flex items-center gap-2 mt-4">
-                <div className={`w-3 h-3 rounded-full ${evolutionConfig.connected ? 'bg-green-500' : 'bg-red-500'}`} />
-                <span className="text-sm">
-                  {evolutionConfig.connected ? 'Conectado à Evolution API' : 'Desconectado'}
-                </span>
+                <Button variant="outline" onClick={handleImportList}>
+                  <Users className="w-4 h-4 mr-2" />
+                  Importar Lista
+                </Button>
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
 
-          {/* Configurações de Webhook Global */}
+        <TabsContent value="reports">
           <Card className="border-0 bg-card/50 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Key className="w-5 h-5" />
-                Configurações de Webhook
+                <BarChart3 className="w-5 h-5" />
+                Relatórios
               </CardTitle>
               <CardDescription>
-                Configure webhooks para receber eventos das instâncias
+                Analytics e métricas das suas instâncias
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="webhook-base-url">URL Base do Webhook</Label>
-                <Input
-                  id="webhook-base-url"
-                  value={webhookUrl}
-                  onChange={(e) => setWebhookUrl(e.target.value)}
-                  placeholder="https://seu-crm.com/api/webhook/whatsapp"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Eventos do Webhook</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    'APPLICATION_STARTUP',
-                    'QRCODE_UPDATED', 
-                    'CONNECTION_UPDATE',
-                    'MESSAGES_UPSERT',
-                    'MESSAGES_UPDATE',
-                    'SEND_MESSAGE'
-                  ].map((event) => (
-                    <div key={event} className="flex items-center space-x-2">
-                      <Switch id={event} defaultChecked />
-                      <Label htmlFor={event} className="text-xs">{event}</Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Button onClick={handleSaveConfig} className="w-full bg-gradient-primary">
-                Salvar Configurações de Webhook
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Status do Sistema */}
-          <Card className="border-0 bg-card/50 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle>Status do Sistema</CardTitle>
-            </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span>Evolution API</span>
-                  <Badge variant={evolutionConfig.connected ? 'default' : 'secondary'}>
-                    {evolutionConfig.connected ? 'Conectado' : 'Desconectado'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Instâncias Ativas</span>
-                  <Badge variant="default">
-                    {instances.filter(i => i.status === 'connected').length}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Total de Instâncias</span>
-                  <Badge variant="secondary">
-                    {instances.length}
-                  </Badge>
-                </div>
+              <div className="text-center py-12">
+                <BarChart3 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">Relatórios em desenvolvimento...</p>
               </div>
             </CardContent>
           </Card>
-        </div>
-      </TabsContent>
-    </Tabs>
+        </TabsContent>
+
+        <TabsContent value="config">
+          <div className="space-y-6">
+            {/* Configuração Evolution API */}
+            <Card className="border-0 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="w-5 h-5" />
+                  Configuração Evolution API
+                </CardTitle>
+                <CardDescription>
+                  Configure a conexão com seu servidor Evolution API
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="server-url">URL do Servidor Evolution API</Label>
+                  <Input
+                    id="server-url"
+                    value={evolutionConfig.serverUrl}
+                    onChange={(e) => setEvolutionConfig(prev => ({ ...prev, serverUrl: e.target.value }))}
+                    placeholder="http://sua-vps-ip:8080"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Exemplo: http://123.456.789.10:8080 ou https://evolution.seudominio.com
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="global-api-key">Chave Global da API</Label>
+                  <Input
+                    id="global-api-key"
+                    type="password"
+                    value={evolutionConfig.globalApiKey}
+                    onChange={(e) => setEvolutionConfig(prev => ({ ...prev, globalApiKey: e.target.value }))}
+                    placeholder="Digite sua chave global da Evolution API"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Esta é a chave definida na variável GLOBAL_API_KEY do seu servidor
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleTestEvolutionConnection}
+                    disabled={evolutionConfig.isLoading || !evolutionConfig.serverUrl || !evolutionConfig.globalApiKey}
+                    variant="outline"
+                  >
+                    <Wifi className="w-4 h-4 mr-2" />
+                    {evolutionConfig.isLoading ? 'Testando...' : 'Testar Conexão'}
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-2 mt-4">
+                  <div className={`w-3 h-3 rounded-full ${evolutionConfig.connected ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <span className="text-sm">
+                    {evolutionConfig.connected ? 'Conectado à Evolution API' : 'Desconectado'}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Configurações de Webhook Global */}
+            <Card className="border-0 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Key className="w-5 h-5" />
+                  Configurações de Webhook
+                </CardTitle>
+                <CardDescription>
+                  Configure webhooks para receber eventos das instâncias
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="webhook-base-url">URL Base do Webhook</Label>
+                  <Input
+                    id="webhook-base-url"
+                    value={webhookUrl}
+                    onChange={(e) => setWebhookUrl(e.target.value)}
+                    placeholder="https://seu-crm.com/api/webhook/whatsapp"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Eventos do Webhook</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      'APPLICATION_STARTUP',
+                      'QRCODE_UPDATED', 
+                      'CONNECTION_UPDATE',
+                      'MESSAGES_UPSERT',
+                      'MESSAGES_UPDATE',
+                      'SEND_MESSAGE'
+                    ].map((event) => (
+                      <div key={event} className="flex items-center space-x-2">
+                        <Switch id={event} defaultChecked />
+                        <Label htmlFor={event} className="text-xs">{event}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Button onClick={handleSaveConfig} className="w-full bg-gradient-primary">
+                  Salvar Configurações de Webhook
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Status do Sistema */}
+            <Card className="border-0 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle>Status do Sistema</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span>Evolution API</span>
+                    <Badge variant={evolutionConfig.connected ? 'default' : 'secondary'}>
+                      {evolutionConfig.connected ? 'Conectado' : 'Desconectado'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Instâncias Ativas</span>
+                    <Badge variant="default">
+                      {instances.filter(i => i.status === 'connected').length}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Total de Instâncias</span>
+                    <Badge variant="secondary">
+                      {instances.length}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Modal de Configuração da Instância */}
+      <Dialog open={configModalOpen} onOpenChange={setConfigModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Configurações da Instância: {selectedInstanceForConfig?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Configure as opções específicas desta instância WhatsApp
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedInstanceForConfig && (
+            <div className="space-y-6">
+              <Tabs defaultValue="basic" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="basic">Básico</TabsTrigger>
+                  <TabsTrigger value="autoReply">Auto Resposta</TabsTrigger>
+                  <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="basic" className="space-y-4">
+                  <div>
+                    <Label htmlFor="instance-name">Nome da Instância</Label>
+                    <Input
+                      id="instance-name"
+                      value={selectedInstanceForConfig.name}
+                      onChange={(e) => setSelectedInstanceForConfig({
+                        ...selectedInstanceForConfig,
+                        name: e.target.value
+                      })}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="instance-webhook">URL do Webhook</Label>
+                    <Input
+                      id="instance-webhook"
+                      value={selectedInstanceForConfig.webhook}
+                      onChange={(e) => setSelectedInstanceForConfig({
+                        ...selectedInstanceForConfig,
+                        webhook: e.target.value
+                      })}
+                      placeholder="https://seu-sistema.com/webhook"
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <Label>Eventos do Webhook</Label>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="event-message-received">Mensagem Recebida</Label>
+                        <Switch
+                          id="event-message-received"
+                          checked={selectedInstanceForConfig.events?.messageReceived}
+                          onCheckedChange={(checked) => setSelectedInstanceForConfig({
+                            ...selectedInstanceForConfig,
+                            events: { ...selectedInstanceForConfig.events, messageReceived: checked }
+                          })}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="event-message-sent">Mensagem Enviada</Label>
+                        <Switch
+                          id="event-message-sent"
+                          checked={selectedInstanceForConfig.events?.messageSent}
+                          onCheckedChange={(checked) => setSelectedInstanceForConfig({
+                            ...selectedInstanceForConfig,
+                            events: { ...selectedInstanceForConfig.events, messageSent: checked }
+                          })}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="event-connection-update">Atualização de Conexão</Label>
+                        <Switch
+                          id="event-connection-update"
+                          checked={selectedInstanceForConfig.events?.connectionUpdate}
+                          onCheckedChange={(checked) => setSelectedInstanceForConfig({
+                            ...selectedInstanceForConfig,
+                            events: { ...selectedInstanceForConfig.events, connectionUpdate: checked }
+                          })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="autoReply" className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="auto-reply-enabled">Ativar Auto Resposta</Label>
+                      <p className="text-sm text-muted-foreground">Responder automaticamente às mensagens recebidas</p>
+                    </div>
+                    <Switch
+                      id="auto-reply-enabled"
+                      checked={selectedInstanceForConfig.autoReply}
+                      onCheckedChange={(checked) => setSelectedInstanceForConfig({
+                        ...selectedInstanceForConfig,
+                        autoReply: checked
+                      })}
+                    />
+                  </div>
+
+                  {selectedInstanceForConfig.autoReply && (
+                    <>
+                      <div>
+                        <Label htmlFor="auto-reply-message">Mensagem de Auto Resposta</Label>
+                        <Textarea
+                          id="auto-reply-message"
+                          value={selectedInstanceForConfig.autoReplyMessage}
+                          onChange={(e) => setSelectedInstanceForConfig({
+                            ...selectedInstanceForConfig,
+                            autoReplyMessage: e.target.value
+                          })}
+                          placeholder="Digite a mensagem automática..."
+                          rows={4}
+                        />
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label htmlFor="business-hours-enabled">Horário Comercial</Label>
+                            <p className="text-sm text-muted-foreground">Limitar auto resposta ao horário comercial</p>
+                          </div>
+                          <Switch
+                            id="business-hours-enabled"
+                            checked={selectedInstanceForConfig.businessHours?.enabled}
+                            onCheckedChange={(checked) => setSelectedInstanceForConfig({
+                              ...selectedInstanceForConfig,
+                              businessHours: { ...selectedInstanceForConfig.businessHours, enabled: checked }
+                            })}
+                          />
+                        </div>
+
+                        {selectedInstanceForConfig.businessHours?.enabled && (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="business-start">Início</Label>
+                              <Input
+                                id="business-start"
+                                type="time"
+                                value={selectedInstanceForConfig.businessHours?.start}
+                                onChange={(e) => setSelectedInstanceForConfig({
+                                  ...selectedInstanceForConfig,
+                                  businessHours: { ...selectedInstanceForConfig.businessHours, start: e.target.value }
+                                })}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="business-end">Fim</Label>
+                              <Input
+                                id="business-end"
+                                type="time"
+                                value={selectedInstanceForConfig.businessHours?.end}
+                                onChange={(e) => setSelectedInstanceForConfig({
+                                  ...selectedInstanceForConfig,
+                                  businessHours: { ...selectedInstanceForConfig.businessHours, end: e.target.value }
+                                })}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="webhooks" className="space-y-4">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-medium text-blue-900 mb-2">Informações do Webhook</h4>
+                    <div className="space-y-2 text-sm text-blue-700">
+                      <p><strong>URL:</strong> {selectedInstanceForConfig.webhook}</p>
+                      <p><strong>Método:</strong> POST</p>
+                      <p><strong>Formato:</strong> JSON</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Headers Personalizados</Label>
+                    <div className="space-y-2">
+                      <Input placeholder="Authorization: Bearer seu-token" />
+                      <Input placeholder="X-Custom-Header: valor" />
+                      <Button variant="outline" size="sm">+ Adicionar Header</Button>
+                    </div>
+                  </div>
+
+                  <Button variant="outline" className="w-full">
+                    Testar Webhook
+                  </Button>
+                </TabsContent>
+              </Tabs>
+
+              <div className="flex gap-2 pt-4">
+                <Button onClick={handleSaveInstanceConfig} className="flex-1 bg-gradient-primary">
+                  Salvar Configurações
+                </Button>
+                <Button variant="outline" onClick={() => setConfigModalOpen(false)} className="flex-1">
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
