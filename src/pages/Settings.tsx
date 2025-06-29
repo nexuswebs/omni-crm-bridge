@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,8 @@ import {
   Trash2,
   Download,
   Upload,
-  RefreshCw
+  RefreshCw,
+  Server
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PaymentConfig } from '@/components/PaymentConfig';
@@ -30,6 +30,7 @@ import { UserModal } from '@/components/UserModal';
 import { IntegrationModal } from '@/components/IntegrationModal';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { NotificationSettings } from '@/components/NotificationSettings';
+import { ProductionConfig } from '@/components/ProductionConfig';
 
 const Settings = () => {
   const { toast } = useToast();
@@ -338,13 +339,14 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="users">Usuários</TabsTrigger>
           <TabsTrigger value="notifications">Notificações</TabsTrigger>
           <TabsTrigger value="payments">Pagamentos</TabsTrigger>
           <TabsTrigger value="security">Segurança</TabsTrigger>
           <TabsTrigger value="system">Sistema</TabsTrigger>
+          <TabsTrigger value="production">Produção</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
@@ -751,6 +753,10 @@ const Settings = () => {
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="production">
+          <ProductionConfig />
         </TabsContent>
       </Tabs>
 
