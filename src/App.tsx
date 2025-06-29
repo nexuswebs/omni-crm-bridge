@@ -1,60 +1,59 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './components/theme-provider';
+import { Layout } from '@/components/Layout';
+import { Dashboard } from '@/pages/Dashboard';
+import { Customers } from '@/pages/Customers';
+import { WhatsApp } from '@/pages/WhatsApp';
+import { Workflows } from '@/pages/Workflows';
+import { Agents } from '@/pages/Agents';
+import { Payments } from '@/pages/Payments';
+import { Settings } from '@/pages/Settings';
+import { Login } from '@/pages/Login';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { NotFound } from '@/pages/NotFound';
+import { Toaster } from "@/components/ui/toaster"
+import {
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query'
+import AdminVerify from '@/pages/AdminVerify';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@/components/ThemeProvider";
-import { AuthProvider } from "./contexts/AuthContext";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { Layout } from "./components/Layout";
-import Dashboard from "./pages/Dashboard";
-import Customers from "./pages/Customers";
-import Workflows from "./pages/Workflows";
-import Agents from "./pages/Agents";
-import Payments from "./pages/Payments";
-import Settings from "./pages/Settings";
-import WhatsApp from "./pages/WhatsApp";
-import Login from "./pages/Login";
-import NotFound from "./pages/NotFound";
+const queryClient = new QueryClient()
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="light"
-      enableSystem
-      disableTransitionOnChange
-    >
-      <AuthProvider>
-        <TooltipProvider>
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+        <AuthProvider>
           <Toaster />
-          <Sonner />
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/admin-verify" element={<AdminVerify />} />
               <Route path="/" element={
                 <ProtectedRoute>
-                  <Layout />
+                  <Layout>
+                    <Routes>
+                      <Route index element={<Dashboard />} />
+                      <Route path="customers" element={<Customers />} />
+                      <Route path="whatsapp" element={<WhatsApp />} />
+                      <Route path="workflows" element={<Workflows />} />
+                      <Route path="agents" element={<Agents />} />
+                      <Route path="payments" element={<Payments />} />
+                      <Route path="settings" element={<Settings />} />
+                    </Routes>
+                  </Layout>
                 </ProtectedRoute>
-              }>
-                <Route index element={<Dashboard />} />
-                <Route path="/customers" element={<Customers />} />
-                <Route path="/workflows" element={<Workflows />} />
-                <Route path="/agents" element={<Agents />} />
-                <Route path="/payments" element={<Payments />} />
-                <Route path="/whatsapp" element={<WhatsApp />} />
-                <Route path="/settings" element={<Settings />} />
-              </Route>
+              } />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
