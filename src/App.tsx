@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@/components/ThemeProvider';
@@ -35,19 +36,17 @@ function App() {
               <Route path="/admin-verify" element={<AdminVerify />} />
               <Route path="/" element={
                 <ProtectedRoute>
-                  <Layout>
-                    <Routes>
-                      <Route index element={<Dashboard />} />
-                      <Route path="customers" element={<Customers />} />
-                      <Route path="whatsapp" element={<WhatsApp />} />
-                      <Route path="workflows" element={<Workflows />} />
-                      <Route path="agents" element={<Agents />} />
-                      <Route path="payments" element={<Payments />} />
-                      <Route path="settings" element={<Settings />} />
-                    </Routes>
-                  </Layout>
+                  <Layout />
                 </ProtectedRoute>
-              } />
+              }>
+                <Route index element={<Dashboard />} />
+                <Route path="customers" element={<Customers />} />
+                <Route path="whatsapp" element={<WhatsApp />} />
+                <Route path="workflows" element={<Workflows />} />
+                <Route path="agents" element={<Agents />} />
+                <Route path="payments" element={<Payments />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
@@ -58,3 +57,4 @@ function App() {
 }
 
 export default App;
+
