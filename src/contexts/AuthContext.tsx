@@ -48,9 +48,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const createUserProfile = async (userId: string, email: string, name: string) => {
+  const createUserProfile = async (userId: string, email: string, name: string, role: 'admin' | 'agent' | 'user' = 'user') => {
     try {
-      console.log('Criando perfil para usuário:', userId, email, name);
+      console.log('Criando perfil para usuário:', userId, email, name, role);
       const { data, error } = await supabase
         .from('profiles')
         .insert([
@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: userId,
             name: name,
             email: email,
-            role: 'user' as const
+            role: role
           }
         ])
         .select()
@@ -77,6 +77,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const createAdminUser = async () => {
+    try {
+      console.log('Criando usuário admin...');
+      
+      // Primeiro, tentar criar o usuário
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: 'admin@crm.com',
+        password: 'admin123',
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            name: 'Administrador'
+          }
+        }
+      });
+
+      if (signUpError) {
+        console.error('Erro ao criar usuário admin:', signUpError);
+        return;
+      }
+
+      if (signUpData.user) {
+        // Criar perfil como admin
+        await createUserProfile(signUpData.user.id, 'admin@crm.com', 'Administrador', 'admin');
+        console.log('Usuário admin criado com sucesso!');
+      }
+    } catch (error) {
+      console.error('Erro inesperado ao criar admin:', error);
+    }
+  };
+
   useEffect(() => {
     // Configurar listener de mudança de estado de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -92,10 +123,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Se não encontrou perfil, criar um novo
             if (!profile) {
               console.log('Perfil não encontrado, criando novo...');
+              const isAdmin = session.user.email === 'admin@crm.com';
               profile = await createUserProfile(
                 session.user.id,
                 session.user.email || '',
-                session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuário'
+                session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuário',
+                isAdmin ? 'admin' : 'user'
               );
             }
             
@@ -117,36 +150,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // Verificar sessão existente
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       console.log('Sessão inicial:', session?.user?.id);
       setSession(session);
       
       if (session?.user) {
-        fetchUserProfile(session.user.id).then(async (profile) => {
-          // Se não encontrou perfil, criar um novo
-          if (!profile) {
-            console.log('Perfil não encontrado na sessão inicial, criando novo...');
-            profile = await createUserProfile(
-              session.user.id,
-              session.user.email || '',
-              session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuário'
-            );
-          }
-          
-          if (profile) {
-            setUser({
-              id: session.user.id,
-              name: profile.name || session.user.email?.split('@')[0] || 'Usuário',
-              email: session.user.email || '',
-              role: (profile.role as 'admin' | 'agent' | 'user') || 'user'
-            });
-          }
-          setIsLoading(false);
-        });
-      } else {
-        setIsLoading(false);
+        let profile = await fetchUserProfile(session.user.id);
+        
+        // Se não encontrou perfil, criar um novo
+        if (!profile) {
+          console.log('Perfil não encontrado na sessão inicial, criando novo...');
+          const isAdmin = session.user.email === 'admin@crm.com';
+          profile = await createUserProfile(
+            session.user.id,
+            session.user.email || '',
+            session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuário',
+            isAdmin ? 'admin' : 'user'
+          );
+        }
+        
+        if (profile) {
+          setUser({
+            id: session.user.id,
+            name: profile.name || session.user.email?.split('@')[0] || 'Usuário',
+            email: session.user.email || '',
+            role: (profile.role as 'admin' | 'agent' | 'user') || 'user'
+          });
+        }
       }
+      
+      setIsLoading(false);
     });
+
+    // Tentar criar usuário admin se não existir
+    setTimeout(() => {
+      createAdminUser();
+    }, 1000);
 
     return () => subscription.unsubscribe();
   }, []);
@@ -154,7 +193,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Tentando fazer login com:', email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -164,6 +205,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: error.message };
       }
 
+      console.log('Login bem-sucedido:', data);
       return {};
     } catch (error: any) {
       console.error('Erro no login:', error);

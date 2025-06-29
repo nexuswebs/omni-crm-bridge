@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -120,7 +119,22 @@ const AdminVerify = () => {
   const createAdminUser = async () => {
     setIsLoading(true);
     try {
-      // Primeiro, tentar criar o usuário
+      console.log('Criando usuário admin com email:', testCredentials.email);
+      
+      // Primeiro, verificar se o usuário já existe
+      const { data: existingUser } = await supabase.auth.admin.listUsers();
+      const userExists = existingUser.users.some(u => u.email === testCredentials.email);
+      
+      if (userExists) {
+        toast({
+          title: "Usuário já existe",
+          description: "O usuário admin já foi criado. Tente fazer login.",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Criar o usuário
       const { data, error } = await supabase.auth.signUp({
         email: testCredentials.email,
         password: testCredentials.password,
@@ -134,19 +148,49 @@ const AdminVerify = () => {
 
       if (error) {
         console.error('Erro ao criar usuário admin:', error);
+        
+        // Se o erro for que o usuário já existe, tente fazer login
+        if (error.message.includes('already been registered')) {
+          toast({
+            title: "Usuário já existe",
+            description: "Tentando fazer login com as credenciais existentes...",
+          });
+          await testLogin();
+          return;
+        }
+        
         toast({
           title: "Erro ao criar admin",
           description: error.message,
           variant: "destructive",
         });
       } else {
+        // Se o usuário foi criado, também criar o perfil
+        if (data.user) {
+          try {
+            await supabase.from('profiles').insert({
+              id: data.user.id,
+              name: 'Administrador',
+              email: testCredentials.email,
+              role: 'admin'
+            });
+          } catch (profileError) {
+            console.log('Perfil pode já existir ou será criado automaticamente');
+          }
+        }
+        
         toast({
           title: "Usuário admin criado!",
-          description: "Verifique o email para confirmar a conta ou tente fazer login",
+          description: "Agora você pode fazer login com as credenciais",
         });
       }
     } catch (error) {
       console.error('Erro inesperado:', error);
+      toast({
+        title: "Erro inesperado",
+        description: "Tente novamente",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -155,7 +199,9 @@ const AdminVerify = () => {
   const testLogin = async () => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Testando login com:', testCredentials.email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: testCredentials.email,
         password: testCredentials.password,
       });
@@ -168,13 +214,50 @@ const AdminVerify = () => {
           variant: "destructive",
         });
       } else {
+        console.log('Login bem-sucedido:', data);
         toast({
           title: "Login bem-sucedido!",
           description: "Credenciais do admin funcionam corretamente",
         });
+        
+        // Redirecionar para o dashboard após login bem-sucedido
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1500);
       }
     } catch (error) {
       console.error('Erro inesperado:', error);
+      toast({
+        title: "Erro inesperado",
+        description: "Tente novamente",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetAdminPassword = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(testCredentials.email, {
+        redirectTo: `${window.location.origin}/login`
+      });
+
+      if (error) {
+        toast({
+          title: "Erro ao resetar senha",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Email de reset enviado",
+          description: "Verifique seu email para resetar a senha",
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao resetar senha:', error);
     } finally {
       setIsLoading(false);
     }
@@ -210,7 +293,7 @@ const AdminVerify = () => {
             Verificação do Sistema
           </h1>
           <p className="text-muted-foreground mt-2">
-            Verifique o status do admin e banco de dados
+            Configure e teste o acesso administrativo
           </p>
         </div>
 
@@ -240,15 +323,15 @@ const AdminVerify = () => {
           </CardContent>
         </Card>
 
-        {/* Teste de Credenciais Admin */}
+        {/* Configuração de Credenciais Admin */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="w-5 h-5" />
-              Teste de Credenciais Admin
+              Configuração do Administrador
             </CardTitle>
             <CardDescription>
-              Teste as credenciais do administrador
+              Configure e teste as credenciais do administrador do sistema
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -289,13 +372,26 @@ const AdminVerify = () => {
               </div>
             </div>
             
-            <div className="flex gap-2">
-              <Button onClick={testLogin} disabled={isLoading}>
-                Testar Login
-              </Button>
-              <Button onClick={createAdminUser} variant="outline" disabled={isLoading}>
+            <div className="flex gap-2 flex-wrap">
+              <Button onClick={createAdminUser} disabled={isLoading} className="bg-green-600 hover:bg-green-700">
                 Criar Usuário Admin
               </Button>
+              <Button onClick={testLogin} disabled={isLoading} variant="outline">
+                Testar Login
+              </Button>
+              <Button onClick={resetAdminPassword} disabled={isLoading} variant="outline">
+                Resetar Senha
+              </Button>
+            </div>
+
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-blue-800 mb-2">Instruções:</h4>
+              <ol className="list-decimal list-inside text-sm text-blue-700 space-y-1">
+                <li>Clique em "Criar Usuário Admin" para criar a conta administrativa</li>
+                <li>Use "Testar Login" para verificar se as credenciais funcionam</li>
+                <li>Se houver problemas, use "Resetar Senha" para redefinir a senha</li>
+                <li>Após o teste bem-sucedido, vá para /login para acessar o sistema</li>
+              </ol>
             </div>
           </CardContent>
         </Card>
