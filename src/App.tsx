@@ -1,18 +1,19 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ThemeProvider } from './components/theme-provider';
+import { ThemeProvider } from '@/components/ThemeProvider';
 import { Layout } from '@/components/Layout';
-import { Dashboard } from '@/pages/Dashboard';
-import { Customers } from '@/pages/Customers';
-import { WhatsApp } from '@/pages/WhatsApp';
-import { Workflows } from '@/pages/Workflows';
-import { Agents } from '@/pages/Agents';
-import { Payments } from '@/pages/Payments';
-import { Settings } from '@/pages/Settings';
-import { Login } from '@/pages/Login';
+import Dashboard from '@/pages/Dashboard';
+import Customers from '@/pages/Customers';
+import WhatsApp from '@/pages/WhatsApp';
+import Workflows from '@/pages/Workflows';
+import Agents from '@/pages/Agents';
+import Payments from '@/pages/Payments';
+import Settings from '@/pages/Settings';
+import Login from '@/pages/Login';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { NotFound } from '@/pages/NotFound';
+import NotFound from '@/pages/NotFound';
 import { Toaster } from "@/components/ui/toaster"
 import {
   QueryClient,
