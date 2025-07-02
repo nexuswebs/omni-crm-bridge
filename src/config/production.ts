@@ -1,114 +1,106 @@
 
 export const productionConfig = {
-  // Configurações de API
-  api: {
-    timeout: 30000,
-    retries: 3,
-    baseURL: import.meta.env.VITE_API_BASE_URL || 'https://api.seudominio.com'
-  },
-
-  // Configurações de Supabase
+  // URLs de produção
+  domain: process.env.PRODUCTION_DOMAIN || 'https://crm.seudominio.com',
+  apiUrl: process.env.PRODUCTION_API_URL || 'https://api.seudominio.com',
+  
+  // Configurações do Supabase
   supabase: {
-    url: import.meta.env.VITE_SUPABASE_URL || '',
-    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
-    maxRetries: 3,
-    timeout: 30000
+    url: process.env.SUPABASE_URL || 'https://eirvcmzqbtkmoxquovsy.supabase.co',
+    anonKey: process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpcnZjbXpxYnRrbW94cXVvdnN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5OTIzNzEsImV4cCI6MjA2NTU2ODM3MX0.pFTNDBbigWzm0pdWvuzQU9giujRVVSXU-tm8eXpl2ts'
   },
-
+  
   // Configurações de segurança
   security: {
-    enableCSP: true,
-    enableHSTS: true,
-    enableCORS: true,
-    sessionTimeout: 30 * 60 * 1000, // 30 minutos
-    maxLoginAttempts: 5
+    ssl: true,
+    hsts: true,
+    contentSecurityPolicy: true,
+    cors: {
+      origin: ['https://crm.seudominio.com'],
+      credentials: true
+    }
   },
-
+  
   // Configurações de performance
   performance: {
-    enableGzip: true,
-    enableCaching: true,
-    cacheMaxAge: 3600, // 1 hora
-    compressionLevel: 6
+    compression: true,
+    caching: true,
+    minification: true,
+    bundleAnalyzer: false
   },
-
+  
   // Configurações de monitoramento
   monitoring: {
-    enableAnalytics: false,
-    enableErrorTracking: true,
-    enablePerformanceTracking: true,
-    logLevel: 'error'
+    enabled: true,
+    errorTracking: true,
+    performanceTracking: true,
+    analytics: true
   },
-
+  
   // Configurações de backup
   backup: {
     enabled: true,
     frequency: 'daily',
-    retention: 30, // dias
-    encryption: true
-  },
-
-  // Configurações de email
-  email: {
-    provider: 'supabase',
-    fromEmail: 'noreply@seudominio.com',
-    fromName: 'CRM System'
-  },
-
-  // Configurações de domínio
-  domain: {
-    production: 'https://crm.seudominio.com',
-    staging: 'https://staging-crm.seudominio.com',
-    development: 'http://localhost:5173'
+    retention: 30 // dias
   }
 };
 
-// Validação de configurações críticas
 export const validateProductionConfig = () => {
   const errors: string[] = [];
-
-  if (!productionConfig.supabase.url) {
-    errors.push('VITE_SUPABASE_URL é obrigatório');
+  
+  // Validar URLs
+  if (!productionConfig.domain || !productionConfig.domain.startsWith('https://')) {
+    errors.push('Domínio de produção deve usar HTTPS');
   }
-
-  if (!productionConfig.supabase.anonKey) {
-    errors.push('VITE_SUPABASE_ANON_KEY é obrigatório');
+  
+  if (!productionConfig.apiUrl || !productionConfig.apiUrl.startsWith('https://')) {
+    errors.push('URL da API deve usar HTTPS');
   }
-
+  
+  // Validar configurações do Supabase
+  if (!productionConfig.supabase.url || !productionConfig.supabase.url.includes('supabase.co')) {
+    errors.push('URL do Supabase inválida');
+  }
+  
+  if (!productionConfig.supabase.anonKey || productionConfig.supabase.anonKey.length < 100) {
+    errors.push('Chave anônima do Supabase inválida');
+  }
+  
   if (errors.length > 0) {
-    throw new Error(`Configuração inválida: ${errors.join(', ')}`);
+    throw new Error(`Configuração de produção inválida:\n${errors.join('\n')}`);
   }
-
+  
   return true;
 };
 
-// Configurações específicas por ambiente
 export const getEnvironmentConfig = () => {
-  const env = import.meta.env.MODE || 'development';
+  const env = process.env.NODE_ENV || 'development';
   
   const configs = {
     development: {
       ...productionConfig,
-      monitoring: {
-        ...productionConfig.monitoring,
-        logLevel: 'debug'
+      domain: 'http://localhost:3000',
+      apiUrl: 'http://localhost:3000/api',
+      security: {
+        ...productionConfig.security,
+        ssl: false,
+        cors: {
+          origin: ['http://localhost:3000'],
+          credentials: true
+        }
       }
     },
     staging: {
       ...productionConfig,
+      domain: 'https://staging.seudominio.com',
+      apiUrl: 'https://staging-api.seudominio.com',
       monitoring: {
         ...productionConfig.monitoring,
-        logLevel: 'info'
+        errorTracking: false
       }
     },
-    production: {
-      ...productionConfig,
-      monitoring: {
-        ...productionConfig.monitoring,
-        logLevel: 'error'
-      }
-    }
+    production: productionConfig
   };
-
+  
   return configs[env as keyof typeof configs] || configs.development;
 };
