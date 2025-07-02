@@ -121,20 +121,7 @@ const AdminVerify = () => {
     try {
       console.log('Criando usuário admin com email:', testCredentials.email);
       
-      // Primeiro, verificar se o usuário já existe
-      const { data: existingUser } = await supabase.auth.admin.listUsers();
-      const userExists = existingUser.users.some(u => u.email === testCredentials.email);
-      
-      if (userExists) {
-        toast({
-          title: "Usuário já existe",
-          description: "O usuário admin já foi criado. Tente fazer login.",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      // Criar o usuário
+      // Criar o usuário diretamente - se já existir, o Supabase retornará o erro apropriado
       const { data, error } = await supabase.auth.signUp({
         email: testCredentials.email,
         password: testCredentials.password,
@@ -150,7 +137,7 @@ const AdminVerify = () => {
         console.error('Erro ao criar usuário admin:', error);
         
         // Se o erro for que o usuário já existe, tente fazer login
-        if (error.message.includes('already been registered')) {
+        if (error.message.includes('already been registered') || error.message.includes('User already registered')) {
           toast({
             title: "Usuário já existe",
             description: "Tentando fazer login com as credenciais existentes...",
