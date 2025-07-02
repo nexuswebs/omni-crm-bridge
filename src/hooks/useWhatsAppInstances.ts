@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { createEvolutionApiService } from '@/services/evolutionApi';
 import { useEvolutionApiStorage } from '@/hooks/useEvolutionApiStorage';
 
-interface WhatsAppInstance {
+export interface WhatsAppInstance {
   id: string;
   name: string;
   status: 'disconnected' | 'connecting' | 'connected' | 'qr_ready';
@@ -261,7 +261,7 @@ export const useWhatsAppInstances = () => {
     setIsLoading(true);
     try {
       const evolutionService = createEvolutionApiService(config.url, config.key);
-      const response = await evolutionService.fetchInstances();
+      const response = await evolutionService.getInstances();
       
       if (response && Array.isArray(response)) {
         const mappedInstances: WhatsAppInstance[] = response.map((inst: any) => ({

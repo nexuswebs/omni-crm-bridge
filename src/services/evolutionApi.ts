@@ -1,4 +1,3 @@
-
 interface EvolutionApiConfig {
   baseUrl: string;
   apiKey: string;
@@ -138,6 +137,27 @@ export class EvolutionApiService {
 
     const data = await response.json();
     console.log('Status da instância:', data);
+    return data;
+  }
+
+  async getInstances(): Promise<any[]> {
+    console.log('Buscando instâncias existentes');
+
+    const response = await fetch(`${this.config.baseUrl}/instance/fetchInstances`, {
+      method: 'GET',
+      headers: {
+        'apikey': this.config.apiKey
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Erro ao buscar instâncias:', response.status, errorText);
+      throw new Error(`Erro ao buscar instâncias: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('Instâncias encontradas:', data);
     return data;
   }
 
