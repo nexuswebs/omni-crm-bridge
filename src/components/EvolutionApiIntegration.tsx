@@ -1,13 +1,16 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Smartphone, CheckCircle, AlertTriangle, Copy, ExternalLink, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Smartphone, Server, Wifi, QrCode, MessageCircle, Settings } from 'lucide-react';
+import { useEvolutionApiStorage } from '@/hooks/useEvolutionApiStorage';
 
 interface EvolutionApiIntegrationProps {
   onClose: () => void;
@@ -15,65 +18,49 @@ interface EvolutionApiIntegrationProps {
 
 export const EvolutionApiIntegration = ({ onClose }: EvolutionApiIntegrationProps) => {
   const { toast } = useToast();
-  
-  const [config, setConfig] = useState({
-    serverUrl: '',
-    apiKey: '',
-    instanceName: 'crm-instance',
-    webhookUrl: '',
-    connected: false
-  });
-
-  const [instances, setInstances] = useState([
-    {
-      id: 1,
-      name: 'crm-instance',
-      status: 'disconnected',
-      qrCode: null,
-      phone: null
-    }
-  ]);
-
+  const { config, updateConfig } = useEvolutionApiStorage();
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('config');
+  const [connectionStatus, setConnectionStatus] = useState<'testing' | 'success' | 'error' | 'idle'>('idle');
 
   const handleTestConnection = async () => {
-    if (!config.serverUrl || !config.apiKey) {
+    if (!config.url || !config.key) {
       toast({
         title: "Campos obrigatórios",
-        description: "Preencha a URL do servidor e a API Key.",
+        description: "Preencha a URL e a chave da API.",
         variant: "destructive",
       });
       return;
     }
 
+    setConnectionStatus('testing');
     setIsLoading(true);
-    console.log('Testando conexão Evolution API:', { serverUrl: config.serverUrl, apiKey: '***' });
 
     try {
-      // Simular teste de conexão com Evolution API
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const success = Math.random() > 0.3; // 70% chance de sucesso
-      
-      if (success) {
-        setConfig({ ...config, connected: true });
-        
+      const response = await fetch(`${config.url}/instance/fetchInstances`, {
+        method: 'GET',
+        headers: {
+          'apikey': config.key,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        setConnectionStatus('success');
+        updateConfig({ connected: true, status: 'connected' });
         toast({
           title: "Conexão estabelecida!",
           description: "Evolution API conectada com sucesso.",
         });
       } else {
-        toast({
-          title: "Erro na conexão",
-          description: "Verifique a URL do servidor e API Key.",
-          variant: "destructive",
-        });
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
+      console.error('Erro na conexão Evolution API:', error);
+      setConnectionStatus('error');
+      updateConfig({ connected: false, status: 'disconnected' });
       toast({
-        title: "Erro",
-        description: "Falha ao conectar com Evolution API.",
+        title: "Erro na conexão",
+        description: error instanceof Error ? error.message : "Verifique a URL e a chave da API.",
         variant: "destructive",
       });
     } finally {
@@ -81,95 +68,41 @@ export const EvolutionApiIntegration = ({ onClose }: EvolutionApiIntegrationProp
     }
   };
 
-  const handleCreateInstance = async () => {
-    if (!config.connected) {
-      toast({
-        title: "Conexão necessária",
-        description: "Conecte-se à Evolution API primeiro.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleSave = () => {
+    console.log('Salvando configurações Evolution API:', {
+      url: config.url,
+      key: '***',
+      instanceName: config.instanceName,
+      webhookUrl: config.webhookUrl,
+      autoConnect: config.autoConnect
+    });
 
-    setIsLoading(true);
-    console.log('Criando instância WhatsApp:', config.instanceName);
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const newInstance = {
-        id: Date.now(),
-        name: config.instanceName,
-        status: 'created',
-        qrCode: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-        phone: null
-      };
-      
-      setInstances([...instances, newInstance]);
-      setActiveTab('instances');
-      
-      toast({
-        title: "Instância criada!",
-        description: `Instância ${config.instanceName} criada com sucesso.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Falha ao criar instância.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleConnectInstance = async (instanceId: number) => {
-    setIsLoading(true);
-    console.log('Conectando instância:', instanceId);
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      setInstances(instances.map(instance => 
-        instance.id === instanceId 
-          ? { ...instance, status: 'connected', phone: '+55 11 99999-9999' }
-          : instance
-      ));
-      
-      toast({
-        title: "Instância conectada!",
-        description: "WhatsApp conectado com sucesso.",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Falha ao conectar instância.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeleteInstance = async (instanceId: number) => {
-    console.log('Deletando instância:', instanceId);
-    
-    setInstances(instances.filter(instance => instance.id !== instanceId));
-    
     toast({
-      title: "Instância removida",
-      description: "Instância deletada com sucesso.",
+      title: "Configurações salvas!",
+      description: "Evolution API configurada com sucesso.",
+    });
+
+    onClose();
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copiado!",
+      description: "Texto copiado para a área de transferência.",
     });
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'connected':
-        return <Badge className="bg-green-500">Conectado</Badge>;
-      case 'created':
-        return <Badge variant="secondary">Aguardando QR Code</Badge>;
+  const getConnectionStatusIcon = () => {
+    switch (connectionStatus) {
+      case 'testing':
+        return <RefreshCw className="w-4 h-4 animate-spin text-blue-500" />;
+      case 'success':
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'error':
+        return <AlertTriangle className="w-4 h-4 text-red-500" />;
       default:
-        return <Badge variant="outline">Desconectado</Badge>;
+        return <div className={`w-3 h-3 rounded-full ${config.connected ? 'bg-green-500' : 'bg-red-500'}`} />;
     }
   };
 
@@ -179,86 +112,83 @@ export const EvolutionApiIntegration = ({ onClose }: EvolutionApiIntegrationProp
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Smartphone className="w-6 h-6" />
-            Evolution API Integration
+            Evolution API
           </h2>
-          <p className="text-muted-foreground">Configure WhatsApp via Evolution API</p>
+          <p className="text-muted-foreground">Configure a integração com Evolution API para WhatsApp</p>
         </div>
         <Button variant="outline" onClick={onClose}>
-          Fechar
+          Voltar
         </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="connection" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="config">Configuração</TabsTrigger>
+          <TabsTrigger value="connection">Conexão</TabsTrigger>
           <TabsTrigger value="instances">Instâncias</TabsTrigger>
           <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="config" className="space-y-4">
+        <TabsContent value="connection" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Server className="w-5 h-5" />
-                Configuração do Servidor
+                <Smartphone className="w-5 h-5" />
+                Configurações de Conexão
               </CardTitle>
               <CardDescription>
-                Configure a conexão com seu servidor Evolution API
+                Configure as credenciais para conectar à Evolution API
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="server-url">URL do Servidor</Label>
+                <Label htmlFor="api-url">URL da API</Label>
                 <Input
-                  id="server-url"
-                  value={config.serverUrl}
-                  onChange={(e) => setConfig({ ...config, serverUrl: e.target.value })}
-                  placeholder="http://seu-servidor:8080"
+                  id="api-url"
+                  value={config.url}
+                  onChange={(e) => updateConfig({ url: e.target.value })}
+                  placeholder="https://api.evolution.com"
                 />
               </div>
 
               <div>
-                <Label htmlFor="api-key">API Key</Label>
+                <Label htmlFor="api-key">Chave da API</Label>
                 <Input
                   id="api-key"
                   type="password"
-                  value={config.apiKey}
-                  onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
-                  placeholder="Sua API Key da Evolution API"
+                  value={config.key}
+                  onChange={(e) => updateConfig({ key: e.target.value })}
+                  placeholder="Sua chave da API"
                 />
               </div>
 
-              <div>
-                <Label htmlFor="instance-name">Nome da Instância</Label>
-                <Input
-                  id="instance-name"
-                  value={config.instanceName}
-                  onChange={(e) => setConfig({ ...config, instanceName: e.target.value })}
-                  placeholder="crm-instance"
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="auto-connect"
+                  checked={config.autoConnect}
+                  onCheckedChange={(checked) => updateConfig({ autoConnect: checked })}
                 />
+                <Label htmlFor="auto-connect">Conectar automaticamente</Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {getConnectionStatusIcon()}
+                <span className="text-sm">
+                  {connectionStatus === 'testing' 
+                    ? 'Testando conexão...' 
+                    : config.connected 
+                      ? 'Conectado' 
+                      : 'Desconectado'
+                  }
+                </span>
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={handleTestConnection} disabled={isLoading}>
-                  <Wifi className="w-4 h-4 mr-2" />
+                <Button onClick={handleTestConnection} disabled={isLoading} variant="outline">
                   {isLoading ? 'Testando...' : 'Testar Conexão'}
                 </Button>
-                
-                <Button 
-                  onClick={handleCreateInstance} 
-                  disabled={!config.connected || isLoading}
-                  className="bg-gradient-primary"
-                >
-                  <Smartphone className="w-4 h-4 mr-2" />
-                  Criar Instância
+                <Button onClick={handleSave} disabled={isLoading}>
+                  Salvar Configurações
                 </Button>
-              </div>
-
-              <div className="flex items-center gap-2 mt-4">
-                <div className={`w-3 h-3 rounded-full ${config.connected ? 'bg-green-500' : 'bg-red-500'}`} />
-                <span className="text-sm">
-                  {config.connected ? 'Conectado à Evolution API' : 'Desconectado'}
-                </span>
               </div>
             </CardContent>
           </Card>
@@ -267,65 +197,56 @@ export const EvolutionApiIntegration = ({ onClose }: EvolutionApiIntegrationProp
         <TabsContent value="instances" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageCircle className="w-5 h-5" />
-                Instâncias WhatsApp
-              </CardTitle>
+              <CardTitle>Gerenciar Instâncias</CardTitle>
               <CardDescription>
-                Gerencie suas instâncias do WhatsApp
+                Configure suas instâncias WhatsApp através da Evolution API
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {instances.map((instance) => (
-                  <div key={instance.id} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h4 className="font-medium">{instance.name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {instance.phone || 'Não conectado'}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {getStatusBadge(instance.status)}
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteInstance(instance.id)}
-                        >
-                          Deletar
-                        </Button>
-                      </div>
-                    </div>
-
-                    {instance.status === 'created' && instance.qrCode && (
-                      <div className="text-center space-y-2">
-                        <div className="bg-white p-4 rounded-lg inline-block">
-                          <QrCode className="w-32 h-32 mx-auto" />
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Escaneie o QR Code com seu WhatsApp
-                        </p>
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleConnectInstance(instance.id)}
-                          disabled={isLoading}
-                        >
-                          {isLoading ? 'Conectando...' : 'Simular Conexão'}
-                        </Button>
-                      </div>
-                    )}
-
-                    {instance.status === 'connected' && (
-                      <div className="bg-green-50 p-3 rounded-lg">
-                        <p className="text-sm text-green-700">
-                          ✅ WhatsApp conectado e pronto para uso!
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="instance-name">Nome da Instância Padrão</Label>
+                <Input
+                  id="instance-name"
+                  value={config.instanceName}
+                  onChange={(e) => updateConfig({ instanceName: e.target.value })}
+                  placeholder="crm-instance"
+                />
               </div>
+
+              {!config.connected && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    Você precisa conectar à Evolution API primeiro para gerenciar instâncias.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {config.connected && (
+                <div className="space-y-3">
+                  <h4 className="font-medium">Instâncias Disponíveis</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 rounded border">
+                      <div>
+                        <p className="font-medium">crm-instance</p>
+                        <p className="text-sm text-muted-foreground">+55 11 99999-9999</p>
+                      </div>
+                      <Badge className="bg-green-500">Conectado</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded border">
+                      <div>
+                        <p className="font-medium">suporte-instance</p>
+                        <p className="text-sm text-muted-foreground">Não conectado</p>
+                      </div>
+                      <Badge variant="outline">Desconectado</Badge>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <Button disabled={!config.connected} className="w-full">
+                Ir para Gerenciador WhatsApp
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -333,42 +254,98 @@ export const EvolutionApiIntegration = ({ onClose }: EvolutionApiIntegrationProp
         <TabsContent value="webhooks" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                Configuração de Webhooks
-              </CardTitle>
+              <CardTitle>Configurações de Webhook</CardTitle>
               <CardDescription>
-                Configure webhooks para receber mensagens
+                Configure webhooks para receber eventos do WhatsApp
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="webhook-url">URL do Webhook</Label>
-                <Input
-                  id="webhook-url"
-                  value={config.webhookUrl}
-                  onChange={(e) => setConfig({ ...config, webhookUrl: e.target.value })}
-                  placeholder="https://seu-crm.com/api/webhook/whatsapp"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="webhook-url"
+                    value={config.webhookUrl}
+                    onChange={(e) => updateConfig({ webhookUrl: e.target.value })}
+                    placeholder="https://webhook.site/unique-id"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => copyToClipboard(config.webhookUrl)}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
 
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">Eventos de Webhook</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• message.receive - Nova mensagem recebida</li>
-                  <li>• message.send - Mensagem enviada</li>
-                  <li>• instance.connect - Instância conectada</li>
-                  <li>• instance.disconnect - Instância desconectada</li>
-                </ul>
-              </div>
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Configure esta URL nas suas instâncias Evolution API para receber eventos em tempo real.
+                </AlertDescription>
+              </Alert>
 
-              <Button className="w-full">
-                Salvar Configurações de Webhook
-              </Button>
+              <div className="space-y-3">
+                <h4 className="font-medium">Eventos Suportados</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2 rounded border text-sm">Mensagem Recebida</div>
+                  <div className="p-2 rounded border text-sm">Mensagem Enviada</div>
+                  <div className="p-2 rounded border text-sm">Status da Mensagem</div>
+                  <div className="p-2 rounded border text-sm">Presença Online</div>
+                  <div className="p-2 rounded border text-sm">Conexão/Desconexão</div>
+                  <div className="p-2 rounded border text-sm">QR Code</div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Documentação e Recursos</CardTitle>
+          <CardDescription>
+            Links úteis para configurar a Evolution API
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 rounded-lg border">
+              <h4 className="font-medium mb-2">Documentação</h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Guia completo da Evolution API
+              </p>
+              <Button variant="outline" size="sm">
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Ver Docs
+              </Button>
+            </div>
+            
+            <div className="p-4 rounded-lg border">
+              <h4 className="font-medium mb-2">Postman Collection</h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Teste as APIs facilmente
+              </p>
+              <Button variant="outline" size="sm">
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Download
+              </Button>
+            </div>
+            
+            <div className="p-4 rounded-lg border">
+              <h4 className="font-medium mb-2">Discord Oficial</h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Comunidade e suporte
+              </p>
+              <Button variant="outline" size="sm">
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Entrar
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

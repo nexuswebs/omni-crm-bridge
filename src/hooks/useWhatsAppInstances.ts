@@ -1,5 +1,4 @@
 
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { createEvolutionApiService } from '@/services/evolutionApi';
@@ -242,9 +241,56 @@ export const useWhatsAppInstances = () => {
   };
 
   const updateInstance = (updatedInstance: WhatsAppInstance) => {
-    setInstances(prev => prev.map(inst => 
-      inst.id === updatedInstance.id ? updatedInstance : inst
-    ));
+    setInstances(prevInstances => 
+      prevInstances.map(instance => 
+        instance.id === updatedInstance.id ? updatedInstance : instance
+      )
+    );
+    
+    toast({
+      title: "Instância atualizada!",
+      description: "Configurações da instância foram salvas.",
+    });
+  };
+
+  const refreshInstances = async () => {
+    if (!config.connected || !config.url || !config.key) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const evolutionService = createEvolutionApiService(config.url, config.key);
+      const response = await evolutionService.fetchInstances();
+      
+      if (response && Array.isArray(response)) {
+        const mappedInstances: WhatsAppInstance[] = response.map((inst: any) => ({
+          id: inst.instance.instanceName || inst.instanceName,
+          name: inst.instance.instanceName || inst.instanceName,
+          status: inst.instance.state === 'open' ? 'connected' : 'disconnected',
+          phone: inst.instance.owner?.number,
+          webhook: inst.instance.webhook,
+          autoReply: false,
+          autoReplyMessage: 'Obrigado pela mensagem! Retornaremos em breve.',
+          businessHours: {
+            enabled: false,
+            start: '09:00',
+            end: '18:00'
+          }
+        }));
+        
+        setInstances(mappedInstances);
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar instâncias:', error);
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível atualizar a lista de instâncias.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return {
@@ -256,8 +302,6 @@ export const useWhatsAppInstances = () => {
     disconnectInstance,
     sendTestMessage,
     updateInstance,
+    refreshInstances
   };
 };
-
-export type { WhatsAppInstance };
-

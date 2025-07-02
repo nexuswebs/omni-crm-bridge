@@ -1,13 +1,14 @@
 
+// Configuração de produção sem dependência de process.env no frontend
 export const productionConfig = {
-  // URLs de produção
-  domain: process.env.PRODUCTION_DOMAIN || 'https://crm.seudominio.com',
-  apiUrl: process.env.PRODUCTION_API_URL || 'https://api.seudominio.com',
+  // URLs de produção - devem ser configuradas na build
+  domain: 'https://crm.seudominio.com',
+  apiUrl: 'https://api.seudominio.com',
   
   // Configurações do Supabase
   supabase: {
-    url: process.env.SUPABASE_URL || 'https://eirvcmzqbtkmoxquovsy.supabase.co',
-    anonKey: process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpcnZjbXpxYnRrbW94cXVvdnN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5OTIzNzEsImV4cCI6MjA2NTU2ODM3MX0.pFTNDBbigWzm0pdWvuzQU9giujRVVSXU-tm8eXpl2ts'
+    url: 'https://eirvcmzqbtkmoxquovsy.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpcnZjbXpxYnRrbW94cXVvdnN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5OTIzNzEsImV4cCI6MjA2NTU2ODM3MX0.pFTNDBbigWzm0pdWvuzQU9giujRVVSXU-tm8eXpl2ts'
   },
   
   // Configurações de segurança
@@ -74,10 +75,11 @@ export const validateProductionConfig = () => {
 };
 
 export const getEnvironmentConfig = () => {
-  const env = process.env.NODE_ENV || 'development';
+  // Detectar ambiente baseado na URL atual
+  const currentUrl = typeof window !== 'undefined' ? window.location.origin : '';
   
-  const configs = {
-    development: {
+  if (currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')) {
+    return {
       ...productionConfig,
       domain: 'http://localhost:3000',
       apiUrl: 'http://localhost:3000/api',
@@ -89,18 +91,20 @@ export const getEnvironmentConfig = () => {
           credentials: true
         }
       }
-    },
-    staging: {
+    };
+  }
+  
+  if (currentUrl.includes('staging') || currentUrl.includes('preview')) {
+    return {
       ...productionConfig,
-      domain: 'https://staging.seudominio.com',
-      apiUrl: 'https://staging-api.seudominio.com',
+      domain: currentUrl,
+      apiUrl: `${currentUrl}/api`,
       monitoring: {
         ...productionConfig.monitoring,
         errorTracking: false
       }
-    },
-    production: productionConfig
-  };
+    };
+  }
   
-  return configs[env as keyof typeof configs] || configs.development;
+  return productionConfig;
 };
