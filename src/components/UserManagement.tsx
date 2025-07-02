@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,7 +52,14 @@ export const UserManagement = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setUsers(data || []);
+      
+      // Type assertion para garantir compatibilidade de tipos
+      const typedUsers = (data || []).map(user => ({
+        ...user,
+        role: (user.role as 'admin' | 'manager' | 'user') || 'user'
+      }));
+      
+      setUsers(typedUsers);
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
       toast({
