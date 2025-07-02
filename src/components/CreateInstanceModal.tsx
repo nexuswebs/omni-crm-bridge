@@ -4,65 +4,90 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { WhatsAppInstance } from '@/hooks/useWhatsAppInstances';
 
 interface CreateInstanceModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  isOpen: boolean;
+  onClose: () => void;
   onCreateInstance: (instanceName: string) => Promise<boolean>;
   isLoading: boolean;
 }
 
 export const CreateInstanceModal = ({
-  open,
-  onOpenChange,
+  isOpen,
+  onClose,
   onCreateInstance,
   isLoading
 }: CreateInstanceModalProps) => {
+  const { toast } = useToast();
   const [instanceName, setInstanceName] = useState('');
 
-  const handleCreate = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!instanceName.trim()) {
+      toast({
+        title: "Nome obrigatório",
+        description: "Digite um nome para a instância.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const success = await onCreateInstance(instanceName);
     if (success) {
       setInstanceName('');
-      onOpenChange(false);
+      onClose();
     }
   };
 
+  const handleClose = () => {
+    setInstanceName('');
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nova Instância WhatsApp</DialogTitle>
+          <DialogTitle>Criar Nova Instância WhatsApp</DialogTitle>
           <DialogDescription>
-            Crie uma nova instância na Evolution API para conectar um número WhatsApp
+            Crie uma nova instância para conectar um número WhatsApp
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="instance-name">Nome da Instância</Label>
             <Input
               id="instance-name"
               value={instanceName}
               onChange={(e) => setInstanceName(e.target.value)}
-              placeholder="Ex: vendas, suporte, marketing"
+              placeholder="ex: atendimento-01"
+              disabled={isLoading}
             />
           </div>
+          
           <div className="flex gap-2">
             <Button 
-              onClick={handleCreate}
-              disabled={!instanceName.trim() || isLoading}
+              type="submit" 
+              disabled={isLoading || !instanceName.trim()} 
               className="flex-1"
             >
               {isLoading ? 'Criando...' : 'Criar Instância'}
             </Button>
             <Button 
+              type="button"
               variant="outline" 
-              onClick={() => onOpenChange(false)}
+              onClick={handleClose} 
+              className="flex-1"
+              disabled={isLoading}
             >
               Cancelar
             </Button>
           </div>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

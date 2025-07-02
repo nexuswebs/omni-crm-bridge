@@ -1,31 +1,27 @@
-
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Smartphone, 
   Plus, 
-  QrCode, 
-  Trash2, 
-  Send, 
   RefreshCw,
-  Power,
-  Settings,
+  Send,
   MessageSquare,
   Users,
   CheckCircle,
-  XCircle,
   AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useWhatsAppInstances } from '@/hooks/useWhatsAppInstances';
+import { useWhatsAppInstances, WhatsAppInstance } from '@/hooks/useWhatsAppInstances';
+import { CreateInstanceModal } from './CreateInstanceModal';
+import { InstanceConfigModal } from './InstanceConfigModal';
+import { ConfirmModal } from './ConfirmModal';
+import { WhatsAppInstanceCard } from './WhatsAppInstanceCard';
 
 export const WhatsAppManager = () => {
   const { toast } = useToast();
@@ -41,32 +37,25 @@ export const WhatsAppManager = () => {
     refreshInstances
   } = useWhatsAppInstances();
 
-  const [newInstanceName, setNewInstanceName] = useState('');
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [configInstance, setConfigInstance] = useState<WhatsAppInstance | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; instanceId: string }>({
+    show: false,
+    instanceId: ''
+  });
   const [testMessage, setTestMessage] = useState({
     phone: '',
     message: 'Esta é uma mensagem de teste do sistema CRM!'
   });
-  const [selectedInstance, setSelectedInstance] = useState<string | null>(null);
 
   useEffect(() => {
     refreshInstances();
   }, []);
 
-  const handleCreateInstance = async () => {
-    if (!newInstanceName.trim()) {
-      toast({
-        title: "Nome obrigatório",
-        description: "Digite um nome para a instância.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const success = await createInstance(newInstanceName);
-    if (success) {
-      setNewInstanceName('');
-      setIsCreateDialogOpen(false);
+  const handleDeleteInstance = async () => {
+    if (deleteConfirm.instanceId) {
+      await deleteInstance(deleteConfirm.instanceId);
+      setDeleteConfirm({ show: false, instanceId: '' });
     }
   };
 
@@ -74,40 +63,6 @@ export const WhatsAppManager = () => {
     const success = await sendTestMessage(instanceId, testMessage.phone, testMessage.message);
     if (success) {
       setTestMessage({ phone: '', message: 'Esta é uma mensagem de teste do sistema CRM!' });
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'connected':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'connecting':
-      case 'qr_ready':
-        return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
-      default:
-        return <XCircle className="w-4 h-4 text-red-500" />;
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'connected':
-        return <Badge className="bg-green-500">Conectado</Badge>;
-      case 'connecting':
-        return <Badge className="bg-blue-500">Conectando</Badge>;
-      case 'qr_ready':
-        return <Badge className="bg-yellow-500">QR Code Pronto</Badge>;
-      default:
-        return <Badge variant="outline">Desconectado</Badge>;
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'connected': return 'Conectado';
-      case 'connecting': return 'Conectando';
-      case 'qr_ready': return 'QR Code Pronto';
-      default: return 'Desconectado';
     }
   };
 
@@ -132,43 +87,10 @@ export const WhatsAppManager = () => {
             Atualizar
           </Button>
           
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-primary">
-                <Plus className="w-4 h-4 mr-2" />
-                Nova Instância
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Criar Nova Instância WhatsApp</DialogTitle>
-                <DialogDescription>
-                  Crie uma nova instância para conectar um número WhatsApp
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="instance-name">Nome da Instância</Label>
-                  <Input
-                    id="instance-name"
-                    value={newInstanceName}
-                    onChange={(e) => setNewInstanceName(e.target.value)}
-                    placeholder="ex: atendimento-01"
-                  />
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button onClick={handleCreateInstance} disabled={isLoading} className="flex-1">
-                    {isLoading ? 'Criando...' : 'Criar Instância'}
-                  </Button>
-                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)} className="flex-1">
-                    Cancelar
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={() => setIsCreateModalOpen(true)} className="bg-gradient-primary">
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Instância
+          </Button>
         </div>
       </div>
 
@@ -246,7 +168,7 @@ export const WhatsAppManager = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Crie sua primeira instância para começar a usar o WhatsApp Business
                 </p>
-                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                <Button onClick={() => setIsCreateModalOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Criar Primeira Instância
                 </Button>
@@ -255,84 +177,15 @@ export const WhatsAppManager = () => {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {instances.map((instance) => (
-                <Card key={instance.id} className="relative">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                          <Smartphone className="w-6 h-6 text-green-600" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg">{instance.name}</CardTitle>
-                          <CardDescription className="flex items-center gap-2">
-                            {instance.phone || 'Não conectado'}
-                          </CardDescription>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(instance.status)}
-                        {getStatusBadge(instance.status)}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-4">
-                    {instance.status === 'qr_ready' && instance.qrCode && (
-                      <Alert>
-                        <QrCode className="h-4 w-4" />
-                        <AlertDescription>
-                          <div className="space-y-2">
-                            <p>Escaneie o QR Code com seu WhatsApp:</p>
-                            <div className="flex justify-center">
-                              <img 
-                                src={`data:image/png;base64,${instance.qrCode}`} 
-                                alt="QR Code WhatsApp"
-                                className="w-32 h-32 border rounded"
-                              />
-                            </div>
-                          </div>
-                        </AlertDescription>
-                      </Alert>
-                    )}
-
-                    <div className="flex gap-2">
-                      {instance.status === 'disconnected' ? (
-                        <Button 
-                          onClick={() => connectInstance(instance.id)}
-                          disabled={isLoading}
-                          className="flex-1"
-                        >
-                          <Power className="w-4 h-4 mr-2" />
-                          Conectar
-                        </Button>
-                      ) : instance.status === 'connected' ? (
-                        <Button 
-                          onClick={() => disconnectInstance(instance.id)}
-                          disabled={isLoading}
-                          variant="outline"
-                          className="flex-1"
-                        >
-                          <Power className="w-4 h-4 mr-2" />
-                          Desconectar
-                        </Button>
-                      ) : (
-                        <Button disabled className="flex-1">
-                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                          {getStatusLabel(instance.status)}
-                        </Button>
-                      )}
-                      
-                      <Button 
-                        onClick={() => deleteInstance(instance.id)}
-                        disabled={isLoading}
-                        variant="outline"
-                        size="sm"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                <WhatsAppInstanceCard
+                  key={instance.id}
+                  instance={instance}
+                  isLoading={isLoading}
+                  onConnect={connectInstance}
+                  onDisconnect={disconnectInstance}
+                  onDelete={(id) => setDeleteConfirm({ show: true, instanceId: id })}
+                  onConfigure={setConfigInstance}
+                />
               ))}
             </div>
           )}
@@ -410,6 +263,31 @@ export const WhatsAppManager = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modals */}
+      <CreateInstanceModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreateInstance={createInstance}
+        isLoading={isLoading}
+      />
+
+      <InstanceConfigModal
+        isOpen={!!configInstance}
+        onClose={() => setConfigInstance(null)}
+        instance={configInstance}
+        onUpdateInstance={updateInstance}
+      />
+
+      <ConfirmModal
+        isOpen={deleteConfirm.show}
+        onClose={() => setDeleteConfirm({ show: false, instanceId: '' })}
+        onConfirm={handleDeleteInstance}
+        title="Deletar Instância"
+        description="Tem certeza que deseja deletar esta instância? Esta ação não pode ser desfeita."
+        confirmText="Deletar"
+        variant="destructive"
+      />
     </div>
   );
 };

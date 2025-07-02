@@ -1,195 +1,158 @@
-import { useState } from 'react';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
+  Smartphone, 
   QrCode, 
-  Settings, 
   Trash2, 
   Power,
-  PowerOff,
-  Wifi,
-  WifiOff,
-  RefreshCw,
-  Send
+  Settings,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 import { WhatsAppInstance } from '@/hooks/useWhatsAppInstances';
 
 interface WhatsAppInstanceCardProps {
   instance: WhatsAppInstance;
+  isLoading: boolean;
   onConnect: (instanceId: string) => void;
   onDisconnect: (instanceId: string) => void;
   onDelete: (instanceId: string) => void;
   onConfigure: (instance: WhatsAppInstance) => void;
-  onSendTestMessage: (instanceId: string, phone: string, message: string) => Promise<boolean>;
-  isLoading: boolean;
 }
 
 export const WhatsAppInstanceCard = ({
   instance,
+  isLoading,
   onConnect,
   onDisconnect,
   onDelete,
-  onConfigure,
-  onSendTestMessage,
-  isLoading
+  onConfigure
 }: WhatsAppInstanceCardProps) => {
-  const [testMessage, setTestMessage] = useState('');
-  const [testPhone, setTestPhone] = useState('');
-
-  const handleSendTest = async () => {
-    try {
-      const success = await onSendTestMessage(instance.id, testPhone, testMessage);
-      if (success) {
-        setTestMessage('');
-        setTestPhone('');
-      }
-    } catch (error) {
-      console.error('Error sending test message:', error);
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'connected':
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'connecting':
+      case 'qr_ready':
+        return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
+      default:
+        return <XCircle className="w-4 h-4 text-red-500" />;
     }
   };
 
-  function getStatusBadge(status: WhatsAppInstance['status']) {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'connected':
         return <Badge className="bg-green-500">Conectado</Badge>;
       case 'connecting':
-        return <Badge variant="secondary">Conectando...</Badge>;
+        return <Badge className="bg-blue-500">Conectando</Badge>;
       case 'qr_ready':
-        return <Badge variant="outline">QR Code Pronto</Badge>;
+        return <Badge className="bg-yellow-500">QR Code Pronto</Badge>;
       default:
-        return <Badge variant="destructive">Desconectado</Badge>;
+        return <Badge variant="outline">Desconectado</Badge>;
     }
-  }
+  };
 
-  function getStatusIcon(status: WhatsAppInstance['status']) {
+  const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'connected':
-        return <Wifi className="w-4 h-4 text-green-500" />;
-      case 'connecting':
-        return <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />;
-      case 'qr_ready':
-        return <QrCode className="w-4 h-4 text-orange-500" />;
-      default:
-        return <WifiOff className="w-4 h-4 text-red-500" />;
+      case 'connected': return 'Conectado';
+      case 'connecting': return 'Conectando';
+      case 'qr_ready': return 'QR Code Pronto';
+      default: return 'Desconectado';
     }
-  }
+  };
 
   return (
-    <Card className="border-0 bg-card/50 backdrop-blur-sm">
+    <Card className="relative">
       <CardHeader>
         <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
+              <Smartphone className="w-6 h-6 text-green-600" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">{instance.name}</CardTitle>
+              <CardDescription className="flex items-center gap-2">
+                {instance.phone || 'Não conectado'}
+              </CardDescription>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             {getStatusIcon(instance.status)}
-            <CardTitle className="text-lg">{instance.name}</CardTitle>
+            {getStatusBadge(instance.status)}
           </div>
-          {getStatusBadge(instance.status)}
         </div>
-        <CardDescription>
-          {instance.phone || 'Aguardando conexão'}
-        </CardDescription>
       </CardHeader>
+      
       <CardContent className="space-y-4">
-        {/* QR Code Display */}
         {instance.status === 'qr_ready' && instance.qrCode && (
-          <div className="text-center space-y-2">
-            <div className="bg-white p-4 rounded-lg inline-block border">
-              {instance.qrCode.startsWith('data:image') ? (
-                <img src={instance.qrCode} alt="QR Code" className="w-32 h-32" />
-              ) : (
-                <QrCode className="w-32 h-32 mx-auto text-gray-400" />
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Escaneie o QR Code com seu WhatsApp
-            </p>
-          </div>
+          <Alert>
+            <QrCode className="h-4 w-4" />
+            <AlertDescription>
+              <div className="space-y-2">
+                <p>Escaneie o QR Code com seu WhatsApp:</p>
+                <div className="flex justify-center">
+                  <img 
+                    src={`data:image/png;base64,${instance.qrCode}`} 
+                    alt="QR Code WhatsApp"
+                    className="w-32 h-32 border rounded"
+                  />
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
         )}
 
-        {instance.status === 'disconnected' && (
-          <div className="text-center space-y-2">
-            <div className="bg-white p-4 rounded-lg inline-block border">
-              <QrCode className="w-32 h-32 mx-auto text-gray-400" />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Clique em "Conectar" para gerar o QR Code
-            </p>
-          </div>
-        )}
-
-        {/* Instance Controls */}
         <div className="flex gap-2">
           {instance.status === 'disconnected' ? (
             <Button 
               onClick={() => onConnect(instance.id)}
               disabled={isLoading}
-              size="sm"
               className="flex-1"
             >
               <Power className="w-4 h-4 mr-2" />
-              {isLoading ? 'Conectando...' : 'Conectar'}
+              Conectar
             </Button>
-          ) : (
+          ) : instance.status === 'connected' ? (
             <Button 
               onClick={() => onDisconnect(instance.id)}
               disabled={isLoading}
-              size="sm"
               variant="outline"
               className="flex-1"
             >
-              <PowerOff className="w-4 h-4 mr-2" />
+              <Power className="w-4 h-4 mr-2" />
               Desconectar
+            </Button>
+          ) : (
+            <Button disabled className="flex-1">
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              {getStatusLabel(instance.status)}
             </Button>
           )}
           
           <Button 
             onClick={() => onConfigure(instance)}
-            size="sm"
+            disabled={isLoading}
             variant="outline"
+            size="sm"
           >
             <Settings className="w-4 h-4" />
           </Button>
           
           <Button 
             onClick={() => onDelete(instance.id)}
-            size="sm"
+            disabled={isLoading}
             variant="outline"
+            size="sm"
           >
             <Trash2 className="w-4 h-4" />
           </Button>
         </div>
-
-        {/* Test Message Section */}
-        {instance.status === 'connected' && (
-          <div className="space-y-2 pt-2 border-t">
-            <Label className="text-sm font-medium">Teste Rápido</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Número (ex: +5511999999999)"
-                value={testPhone}
-                onChange={(e) => setTestPhone(e.target.value)}
-                className="text-xs"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Mensagem de teste"
-                value={testMessage}
-                onChange={(e) => setTestMessage(e.target.value)}
-                className="text-xs"
-              />
-              <Button 
-                onClick={handleSendTest}
-                size="sm"
-                disabled={!testMessage.trim() || !testPhone.trim() || isLoading}
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

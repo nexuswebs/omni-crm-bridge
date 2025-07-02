@@ -1,198 +1,154 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Globe } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { WhatsAppInstance } from '@/hooks/useWhatsAppInstances';
+import { Settings, Clock, MessageSquare } from 'lucide-react';
 
 interface InstanceConfigModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  isOpen: boolean;
+  onClose: () => void;
   instance: WhatsAppInstance | null;
-  onSave: (instance: WhatsAppInstance) => void;
+  onUpdateInstance: (instance: WhatsAppInstance) => void;
 }
 
 export const InstanceConfigModal = ({
-  open,
-  onOpenChange,
+  isOpen,
+  onClose,
   instance,
-  onSave
+  onUpdateInstance
 }: InstanceConfigModalProps) => {
-  const [editedInstance, setEditedInstance] = useState<WhatsAppInstance | null>(null);
-
-  useEffect(() => {
-    if (instance) {
-      setEditedInstance({ ...instance });
+  const { toast } = useToast();
+  const [config, setConfig] = useState({
+    autoReply: instance?.autoReply || false,
+    autoReplyMessage: instance?.autoReplyMessage || 'Obrigado pela mensagem! Retornaremos em breve.',
+    businessHours: {
+      enabled: instance?.businessHours?.enabled || false,
+      start: instance?.businessHours?.start || '09:00',
+      end: instance?.businessHours?.end || '18:00'
     }
-  }, [instance]);
+  });
 
   const handleSave = () => {
-    if (!editedInstance) return;
-    
-    onSave(editedInstance);
-    onOpenChange(false);
+    if (!instance) return;
+
+    const updatedInstance: WhatsAppInstance = {
+      ...instance,
+      autoReply: config.autoReply,
+      autoReplyMessage: config.autoReplyMessage,
+      businessHours: config.businessHours
+    };
+
+    onUpdateInstance(updatedInstance);
+    onClose();
   };
 
-  if (!editedInstance) return null;
+  if (!instance) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Configurações - {editedInstance.name}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Settings className="w-5 h-5" />
+            Configurar {instance.name}
+          </DialogTitle>
           <DialogDescription>
-            Configure as opções avançadas da instância
+            Configure as opções de automação desta instância
           </DialogDescription>
         </DialogHeader>
         
-        <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="basic">Básico</TabsTrigger>
-            <TabsTrigger value="autoreply">Auto Resposta</TabsTrigger>
-            <TabsTrigger value="webhook">Webhooks</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="basic" className="space-y-4">
-            <div>
-              <Label htmlFor="instance-name-edit">Nome da Instância</Label>
-              <Input
-                id="instance-name-edit"
-                value={editedInstance.name}
-                onChange={(e) => setEditedInstance({
-                  ...editedInstance,
-                  name: e.target.value
-                })}
+        <div className="space-y-6">
+          {/* Auto Reply */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4" />
+                <Label>Resposta Automática</Label>
+              </div>
+              <Switch
+                checked={config.autoReply}
+                onCheckedChange={(checked) => setConfig({ ...config, autoReply: checked })}
               />
             </div>
             
-            <div className="flex items-center justify-between">
+            {config.autoReply && (
               <div>
-                <Label>Horário Comercial</Label>
-                <p className="text-sm text-muted-foreground">
-                  Responder apenas em horário comercial
-                </p>
-              </div>
-              <Switch
-                checked={editedInstance.businessHours?.enabled || false}
-                onCheckedChange={(enabled) => setEditedInstance({
-                  ...editedInstance,
-                  businessHours: {
-                    ...editedInstance.businessHours!,
-                    enabled
-                  }
-                })}
-              />
-            </div>
-
-            {editedInstance.businessHours?.enabled && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Início</Label>
-                  <Input
-                    type="time"
-                    value={editedInstance.businessHours.start}
-                    onChange={(e) => setEditedInstance({
-                      ...editedInstance,
-                      businessHours: {
-                        ...editedInstance.businessHours!,
-                        start: e.target.value
-                      }
-                    })}
-                  />
-                </div>
-                <div>
-                  <Label>Fim</Label>
-                  <Input
-                    type="time"
-                    value={editedInstance.businessHours.end}
-                    onChange={(e) => setEditedInstance({
-                      ...editedInstance,
-                      businessHours: {
-                        ...editedInstance.businessHours!,
-                        end: e.target.value
-                      }
-                    })}
-                  />
-                </div>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="autoreply" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Auto Resposta</Label>
-                <p className="text-sm text-muted-foreground">
-                  Responder automaticamente a novas mensagens
-                </p>
-              </div>
-              <Switch
-                checked={editedInstance.autoReply || false}
-                onCheckedChange={(autoReply) => setEditedInstance({
-                  ...editedInstance,
-                  autoReply
-                })}
-              />
-            </div>
-
-            {editedInstance.autoReply && (
-              <div>
-                <Label>Mensagem de Auto Resposta</Label>
+                <Label htmlFor="auto-reply-message">Mensagem de Resposta</Label>
                 <Textarea
-                  value={editedInstance.autoReplyMessage || ''}
-                  onChange={(e) => setEditedInstance({
-                    ...editedInstance,
-                    autoReplyMessage: e.target.value
-                  })}
-                  placeholder="Digite a mensagem que será enviada automaticamente..."
-                  rows={4}
+                  id="auto-reply-message"
+                  value={config.autoReplyMessage}
+                  onChange={(e) => setConfig({ ...config, autoReplyMessage: e.target.value })}
+                  placeholder="Digite a mensagem automática..."
+                  rows={3}
                 />
               </div>
             )}
-          </TabsContent>
+          </div>
 
-          <TabsContent value="webhook" className="space-y-4">
-            <div>
-              <Label htmlFor="webhook-url">URL do Webhook</Label>
-              <Input
-                id="webhook-url"
-                value={editedInstance.webhook || ''}
-                onChange={(e) => setEditedInstance({
-                  ...editedInstance,
-                  webhook: e.target.value
-                })}
-                placeholder="https://webhook.site/unique-id"
+          {/* Business Hours */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                <Label>Horário Comercial</Label>
+              </div>
+              <Switch
+                checked={config.businessHours.enabled}
+                onCheckedChange={(checked) => 
+                  setConfig({ 
+                    ...config, 
+                    businessHours: { ...config.businessHours, enabled: checked }
+                  })
+                }
               />
             </div>
-
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
-                <Globe className="w-4 h-4" />
-                Eventos de Webhook
-              </h4>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>• message.receive - Nova mensagem recebida</li>
-                <li>• message.send - Mensagem enviada</li>
-                <li>• instance.connect - Instância conectada</li>
-                <li>• instance.disconnect - Instância desconectada</li>
-              </ul>
-            </div>
-          </TabsContent>
-        </Tabs>
+            
+            {config.businessHours.enabled && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="start-time">Início</Label>
+                  <Input
+                    id="start-time"
+                    type="time"
+                    value={config.businessHours.start}
+                    onChange={(e) => 
+                      setConfig({
+                        ...config,
+                        businessHours: { ...config.businessHours, start: e.target.value }
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="end-time">Fim</Label>
+                  <Input
+                    id="end-time"
+                    type="time"
+                    value={config.businessHours.end}
+                    onChange={(e) => 
+                      setConfig({
+                        ...config,
+                        businessHours: { ...config.businessHours, end: e.target.value }
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
         <div className="flex gap-2 pt-4">
           <Button onClick={handleSave} className="flex-1">
             Salvar Configurações
           </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => onOpenChange(false)}
-          >
+          <Button variant="outline" onClick={onClose} className="flex-1">
             Cancelar
           </Button>
         </div>
