@@ -31,7 +31,7 @@ export const useSystemConfig = (configType: string) => {
       }
 
       const { data, error } = await supabase
-        .from('system_configs')
+        .from('system_configs' as any)
         .select('*')
         .eq('user_id', user.id)
         .eq('config_type', configType)
@@ -72,14 +72,14 @@ export const useSystemConfig = (configType: string) => {
 
       // Primeiro, desativar configurações antigas
       await supabase
-        .from('system_configs')
+        .from('system_configs' as any)
         .update({ is_active: false })
         .eq('user_id', user.id)
         .eq('config_type', configType);
 
       // Criar nova configuração
       const { data, error } = await supabase
-        .from('system_configs')
+        .from('system_configs' as any)
         .insert({
           user_id: user.id,
           config_type: configType,

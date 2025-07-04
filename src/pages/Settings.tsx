@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EvolutionApiConfigDatabase } from '@/components/EvolutionApiConfigDatabase';
-import { WorkflowN8nIntegration } from '@/components/WorkflowN8nIntegration';
+import { WorkflowN8nIntegrationDatabase } from '@/components/WorkflowN8nIntegrationDatabase';
 import { ProductionConfig } from '@/components/ProductionConfig';
 import { PaymentConfig } from '@/components/PaymentConfig';
 import { NotificationSettings } from '@/components/NotificationSettings';
@@ -22,7 +22,7 @@ export default function Settings() {
   const [showN8nIntegration, setShowN8nIntegration] = useState(false);
 
   if (showN8nIntegration) {
-    return <WorkflowN8nIntegration onClose={() => setShowN8nIntegration(false)} />;
+    return <WorkflowN8nIntegrationDatabase onClose={() => setShowN8nIntegration(false)} />;
   }
 
   return (
