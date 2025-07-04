@@ -1,14 +1,29 @@
 
-// Configuração de produção sem dependência de process.env no frontend
+// Configuração de produção - incluída no build
 export const productionConfig = {
-  // URLs de produção - devem ser configuradas na build
+  // URLs de produção - configuradas durante o build
   domain: 'https://crm.seudominio.com',
   apiUrl: 'https://api.seudominio.com',
   
-  // Configurações do Supabase
+  // Configurações do Supabase - serão substituídas durante o build
   supabase: {
     url: 'https://eirvcmzqbtkmoxquovsy.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpcnZjbXpxYnRrbW94cXVvdnN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5OTIzNzEsImV4cCI6MjA2NTU2ODM3MX0.pFTNDBbigWzm0pdWvuzQU9giujRVVSXU-tm8eXpl2ts'
+  },
+  
+  // Configurações pré-definidas para Evolution API
+  evolutionApi: {
+    url: 'https://api.redenexus.top',
+    key: 'e5fe045f841bddf5406357ebea55ea2b',
+    instanceName: 'crm-instance',
+    webhookUrl: 'https://webhook.site/unique-id'
+  },
+  
+  // Configurações pré-definidas para n8n
+  n8n: {
+    url: 'https://app.n8n.cloud',
+    apiKey: '',
+    webhookUrl: ''
   },
   
   // Configurações de segurança
@@ -36,13 +51,6 @@ export const productionConfig = {
     errorTracking: true,
     performanceTracking: true,
     analytics: true
-  },
-  
-  // Configurações de backup
-  backup: {
-    enabled: true,
-    frequency: 'daily',
-    retention: 30 // dias
   }
 };
 
