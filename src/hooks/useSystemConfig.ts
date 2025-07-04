@@ -31,14 +31,14 @@ export const useSystemConfig = (configType: string) => {
       }
 
       const { data, error } = await supabase
-        .from('system_configs' as any)
+        .from('system_configs')
         .select('*')
         .eq('user_id', user.id)
         .eq('config_type', configType)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Erro ao carregar configuração:', error);
@@ -72,14 +72,14 @@ export const useSystemConfig = (configType: string) => {
 
       // Primeiro, desativar configurações antigas
       await supabase
-        .from('system_configs' as any)
+        .from('system_configs')
         .update({ is_active: false })
         .eq('user_id', user.id)
         .eq('config_type', configType);
 
       // Criar nova configuração
       const { data, error } = await supabase
-        .from('system_configs' as any)
+        .from('system_configs')
         .insert({
           user_id: user.id,
           config_type: configType,
