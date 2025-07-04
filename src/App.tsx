@@ -33,55 +33,19 @@ const AppContent = () => {
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
         <Route path="/admin-verify" element={<AdminVerify />} />
-        <Route path="/dashboard" element={
+        <Route path="/" element={
           <ProtectedRoute>
-            <Layout>
-              <Dashboard />
-            </Layout>
+            <Layout />
           </ProtectedRoute>
-        } />
-        <Route path="/whatsapp" element={
-          <ProtectedRoute>
-            <Layout>
-              <WhatsApp />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/customers" element={
-          <ProtectedRoute>
-            <Layout>
-              <Customers />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/workflows" element={
-          <ProtectedRoute>
-            <Layout>
-              <Workflows />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/agents" element={
-          <ProtectedRoute>
-            <Layout>
-              <Agents />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/payments" element={
-          <ProtectedRoute>
-            <Layout>
-              <Payments />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/settings" element={
-          <ProtectedRoute>
-            <Layout>
-              <Settings />
-            </Layout>
-          </ProtectedRoute>
-        } />
+        }>
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="whatsapp" element={<WhatsApp />} />
+          <Route path="customers" element={<Customers />} />
+          <Route path="workflows" element={<Workflows />} />
+          <Route path="agents" element={<Agents />} />
+          <Route path="payments" element={<Payments />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
