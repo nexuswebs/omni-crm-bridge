@@ -1,27 +1,284 @@
 
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nexus Agents - Automating Tomorrow</title>
-    <meta name="description" content="Sistema CRM Inteligente com IA e Automações" />
-    <meta name="author" content="Nexus Agents" />
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Inteligente</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Tela de Login -->
+    <div id="loginScreen" class="screen active">
+        <div class="login-container">
+            <div class="login-card">
+                <h1>CRM Inteligente</h1>
+                <p>Sistema completo de gestão de relacionamento com clientes</p>
+                
+                <form id="loginForm">
+                    <div class="form-group">
+                        <input type="email" id="email" placeholder="E-mail" required>
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    
+                    <div class="form-group">
+                        <input type="password" id="password" placeholder="Senha" required>
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    
+                    <button type="submit">Entrar no Sistema</button>
+                </form>
+                
+                <p class="demo-info">
+                    Demo: admin@teste.com / 123456
+                </p>
+            </div>
+        </div>
+    </div>
 
-    <meta property="og:title" content="Nexus Agents - Automating Tomorrow" />
-    <meta property="og:description" content="Sistema CRM Inteligente com IA e Automações" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/lovable-uploads/c6d44030-5c90-4b0a-a929-4224d423ff2a.png" />
+    <!-- Dashboard Principal -->
+    <div id="dashboardScreen" class="screen">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>CRM</h2>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li><a href="#" data-page="dashboard" class="active"><i class="fas fa-chart-bar"></i> Dashboard</a></li>
+                <li><a href="#" data-page="customers"><i class="fas fa-users"></i> Clientes</a></li>
+                <li><a href="#" data-page="whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp</a></li>
+                <li><a href="#" data-page="workflows"><i class="fas fa-cogs"></i> Workflows</a></li>
+                <li><a href="#" data-page="payments"><i class="fas fa-credit-card"></i> Pagamentos</a></li>
+                <li><a href="#" data-page="agents"><i class="fas fa-robot"></i> Agentes</a></li>
+                <li><a href="#" data-page="settings"><i class="fas fa-cog"></i> Configurações</a></li>
+            </ul>
+            
+            <div class="sidebar-footer">
+                <button id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            </div>
+        </nav>
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@nexus_agents" />
-    <meta name="twitter:image" content="/lovable-uploads/c6d44030-5c90-4b0a-a929-4224d423ff2a.png" />
-    
-    <link rel="icon" href="/lovable-uploads/c6d44030-5c90-4b0a-a929-4224d423ff2a.png" type="image/png">
-  </head>
+        <div class="main-content">
+            <header class="header">
+                <h1 id="pageTitle">Dashboard</h1>
+                <div class="user-info">
+                    <span>Bem-vindo, Admin!</span>
+                    <i class="fas fa-user-circle"></i>
+                </div>
+            </header>
 
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+            <div class="content">
+                <!-- Dashboard -->
+                <div id="dashboardContent" class="page-content active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="totalCustomers">0</h3>
+                                <p>Total de Clientes</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon green">
+                                <i class="fab fa-whatsapp"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="whatsappMessages">0</h3>
+                                <p>Mensagens Hoje</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon purple">
+                                <i class="fas fa-cogs"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="activeWorkflows">0</h3>
+                                <p>Workflows Ativos</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon orange">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="totalRevenue">R$ 0</h3>
+                                <p>Receita Total</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clientes -->
+                <div id="customersContent" class="page-content">
+                    <div class="page-header">
+                        <h2>Gerenciar Clientes</h2>
+                        <button class="btn btn-primary" onclick="openAddCustomerModal()">
+                            <i class="fas fa-plus"></i> Novo Cliente
+                        </button>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table id="customersTable">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>E-mail</th>
+                                    <th>Telefone</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Dados serão inseridos via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- WhatsApp -->
+                <div id="whatsappContent" class="page-content">
+                    <div class="page-header">
+                        <h2>WhatsApp Business</h2>
+                        <button class="btn btn-primary" onclick="connectWhatsApp()">
+                            <i class="fab fa-whatsapp"></i> Conectar WhatsApp
+                        </button>
+                    </div>
+                    
+                    <div class="whatsapp-status">
+                        <div class="status-card">
+                            <i class="fab fa-whatsapp"></i>
+                            <h3>Status da Conexão</h3>
+                            <p id="whatsappStatus">Desconectado</p>
+                            <div id="qrcode" style="display: none;">
+                                <img src="https://via.placeholder.com/200x200?text=QR+Code" alt="QR Code">
+                                <p>Escaneie o QR Code com seu WhatsApp</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workflows -->
+                <div id="workflowsContent" class="page-content">
+                    <div class="page-header">
+                        <h2>Automações e Workflows</h2>
+                        <button class="btn btn-primary" onclick="openAddWorkflowModal()">
+                            <i class="fas fa-plus"></i> Novo Workflow
+                        </button>
+                    </div>
+                    
+                    <div class="workflows-grid" id="workflowsGrid">
+                        <!-- Workflows serão inseridos via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Pagamentos -->
+                <div id="paymentsContent" class="page-content">
+                    <div class="page-header">
+                        <h2>Pagamentos</h2>
+                        <button class="btn btn-primary" onclick="openPaymentModal()">
+                            <i class="fas fa-plus"></i> Novo Pagamento
+                        </button>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table id="paymentsTable">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Data</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Dados serão inseridos via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Agentes -->
+                <div id="agentsContent" class="page-content">
+                    <div class="page-header">
+                        <h2>Agentes de IA</h2>
+                        <button class="btn btn-primary" onclick="openAddAgentModal()">
+                            <i class="fas fa-plus"></i> Novo Agente
+                        </button>
+                    </div>
+                    
+                    <div class="agents-grid" id="agentsGrid">
+                        <!-- Agentes serão inseridos via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Configurações -->
+                <div id="settingsContent" class="page-content">
+                    <div class="page-header">
+                        <h2>Configurações</h2>
+                    </div>
+                    
+                    <div class="settings-grid">
+                        <div class="setting-card">
+                            <h3>Evolution API</h3>
+                            <p>Configure sua API do WhatsApp</p>
+                            <button class="btn btn-secondary">Configurar</button>
+                        </div>
+                        
+                        <div class="setting-card">
+                            <h3>n8n Integration</h3>
+                            <p>Conecte com n8n para automações</p>
+                            <button class="btn btn-secondary">Configurar</button>
+                        </div>
+                        
+                        <div class="setting-card">
+                            <h3>Pagamentos</h3>
+                            <p>Configure gateways de pagamento</p>
+                            <button class="btn btn-secondary">Configurar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modais -->
+    <div id="customerModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Adicionar Cliente</h2>
+            <form id="customerForm">
+                <div class="form-group">
+                    <label>Nome:</label>
+                    <input type="text" id="customerName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>E-mail:</label>
+                    <input type="email" id="customerEmail" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Telefone:</label>
+                    <input type="tel" id="customerPhone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Empresa:</label>
+                    <input type="text" id="customerCompany">
+                </div>
+                
+                <button type="submit">Salvar Cliente</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
 </html>
