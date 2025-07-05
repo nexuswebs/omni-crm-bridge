@@ -116,6 +116,82 @@ function createTables($pdo) {
         $stmt = $pdo->prepare("INSERT INTO users (email, password, name) VALUES (?, ?, ?)");
         $stmt->execute(['admin@teste.com', password_hash('123456', PASSWORD_DEFAULT), 'Admin User']);
     }
+    
+    // Adicionar novas tabelas para integrações se não existirem
+    try {
+        // Tabela para configurações de API
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS api_configs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                api_name TEXT UNIQUE NOT NULL,
+                config_data TEXT NOT NULL,
+                is_active BOOLEAN DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
+        
+        // Tabela para instâncias Evolution
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS evolution_instances (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                instance_name TEXT UNIQUE NOT NULL,
+                status TEXT DEFAULT 'disconnected',
+                config_data TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
+        
+        // Tabela para workflows n8n
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS n8n_workflows (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                workflow_id TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                active BOOLEAN DEFAULT 1,
+                workflow_data TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
+        
+        // Tabela para execuções n8n
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS n8n_executions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                workflow_id TEXT NOT NULL,
+                execution_data TEXT,
+                status TEXT DEFAULT 'pending',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
+        
+        // Tabela para logs de webhook
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS webhook_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                source TEXT NOT NULL,
+                event_type TEXT,
+                payload TEXT,
+                processed BOOLEAN DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
+        
+        // Atualizar tabela de mensagens para incluir instance_name
+        $pdo->exec("
+            ALTER TABLE messages ADD COLUMN instance_name TEXT DEFAULT 'default';
+        ");
+        
+        // Atualizar tabela de mensagens para incluir message_id
+        $pdo->exec("
+            ALTER TABLE messages ADD COLUMN message_id TEXT;
+        ");
+        
+    } catch (Exception $e) {
+        // Colunas já existem, continuar
+    }
 }
 
 function handleGet($pdo, $path) {

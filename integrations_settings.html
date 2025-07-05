@@ -1,0 +1,262 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações de Integrações - CRM Inteligente</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="payment_styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="payment-settings-container">
+        <div class="header">
+            <h1><i class="fas fa-plug"></i> Configurações de Integrações</h1>
+            <button onclick="window.history.back()" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar ao Sistema
+            </button>
+        </div>
+
+        <div class="payment-tabs">
+            <div class="tab-buttons">
+                <button class="tab-btn active" data-tab="evolution">
+                    <i class="fab fa-whatsapp"></i> 
+                    <span>Evolution API</span>
+                    <div class="status-indicator" id="evolution-status"></div>
+                </button>
+                <button class="tab-btn" data-tab="n8n">
+                    <i class="fas fa-project-diagram"></i> 
+                    <span>n8n.cloud</span>
+                    <div class="status-indicator" id="n8n-status"></div>
+                </button>
+                <button class="tab-btn" data-tab="webhooks">
+                    <i class="fas fa-webhook"></i> 
+                    <span>Webhooks</span>
+                    <div class="status-indicator" id="webhook-status"></div>
+                </button>
+            </div>
+
+            <!-- Evolution API Configuration -->
+            <div class="tab-content active" id="evolution-tab">
+                <div class="config-card">
+                    <h3><i class="fab fa-whatsapp"></i> Configuração Evolution API</h3>
+                    <p>Configure sua Evolution API para WhatsApp Business</p>
+                    
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Como configurar:</strong>
+                            <ol>
+                                <li>Tenha uma instância Evolution API rodando</li>
+                                <li>Copie a URL base da sua API</li>
+                                <li>Copie a API Key da sua instância</li>
+                                <li>Configure o webhook para receber eventos</li>
+                            </ol>
+                        </div>
+                    </div>
+                    
+                    <form id="evolutionForm">
+                        <div class="form-group">
+                            <label for="evolutionUrl">URL da Evolution API:</label>
+                            <input type="url" id="evolutionUrl" placeholder="https://api.evolution.com" required>
+                            <small>URL base da sua Evolution API</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="evolutionKey">API Key:</label>
+                            <input type="password" id="evolutionKey" placeholder="Sua API Key" required>
+                            <small>Chave de acesso da Evolution API</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="evolutionWebhook">URL do Webhook:</label>
+                            <input type="url" id="evolutionWebhook" placeholder="https://seu-crm.com/webhook/evolution">
+                            <small>URL para receber eventos do WhatsApp</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="evolutionInstance">Nome da Instância Padrão:</label>
+                            <input type="text" id="evolutionInstance" placeholder="crm-instance" value="crm-instance">
+                            <small>Nome da instância WhatsApp padrão</small>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button type="button" onclick="testEvolutionConnection()" class="btn btn-secondary">
+                                <i class="fas fa-plug"></i> Testar Conexão
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Salvar Configuração
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Evolution Instance Management -->
+                <div class="config-card" style="margin-top: 30px;">
+                    <h3><i class="fas fa-mobile-alt"></i> Gerenciar Instâncias WhatsApp</h3>
+                    <div id="evolution-instances">
+                        <p>Configure a Evolution API primeiro para ver as instâncias disponíveis.</p>
+                    </div>
+                    <div class="flex gap-2" style="margin-top: 20px;">
+                        <button onclick="loadEvolutionInstances()" class="btn btn-secondary">
+                            <i class="fas fa-sync"></i> Atualizar Lista
+                        </button>
+                        <button onclick="createEvolutionInstance()" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Criar Nova Instância
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- n8n Configuration -->
+            <div class="tab-content" id="n8n-tab">
+                <div class="config-card">
+                    <h3><i class="fas fa-project-diagram"></i> Configuração n8n.cloud</h3>
+                    <p>Configure sua conta n8n.cloud para automações</p>
+                    
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Como obter as credenciais:</strong>
+                            <ol>
+                                <li>Acesse <a href="https://n8n.cloud" target="_blank">n8n.cloud</a></li>
+                                <li>Vá em Settings → API</li>
+                                <li>Gere uma nova API Key</li>
+                                <li>Copie a URL da sua instância</li>
+                            </ol>
+                        </div>
+                    </div>
+                    
+                    <form id="n8nForm">
+                        <div class="form-group">
+                            <label for="n8nUrl">URL do n8n.cloud:</label>
+                            <input type="url" id="n8nUrl" placeholder="https://app.n8n.cloud" required>
+                            <small>URL da sua instância n8n.cloud</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="n8nApiKey">API Key:</label>
+                            <input type="password" id="n8nApiKey" placeholder="Sua API Key do n8n" required>
+                            <small>Chave de API do n8n.cloud</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="n8nWebhook">URL do Webhook (CRM):</label>
+                            <input type="url" id="n8nWebhook" placeholder="https://seu-crm.com/webhook/n8n">
+                            <small>URL para n8n enviar dados para o CRM</small>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button type="button" onclick="testN8nConnection()" class="btn btn-secondary">
+                                <i class="fas fa-plug"></i> Testar Conexão
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Salvar Configuração
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- n8n Workflows -->
+                <div class="config-card" style="margin-top: 30px;">
+                    <h3><i class="fas fa-sitemap"></i> Workflows n8n</h3>
+                    <div id="n8n-workflows">
+                        <p>Configure o n8n primeiro para ver os workflows disponíveis.</p>
+                    </div>
+                    <div class="flex gap-2" style="margin-top: 20px;">
+                        <button onclick="loadN8nWorkflows()" class="btn btn-secondary">
+                            <i class="fas fa-sync"></i> Atualizar Lista
+                        </button>
+                        <button onclick="syncN8nWorkflows()" class="btn btn-primary">
+                            <i class="fas fa-download"></i> Sincronizar Workflows
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Webhooks Configuration -->
+            <div class="tab-content" id="webhooks-tab">
+                <div class="config-card">
+                    <h3><i class="fas fa-webhook"></i> Configuração de Webhooks</h3>
+                    <p>Configure URLs para receber notificações de eventos</p>
+                    
+                    <form id="webhookForm">
+                        <div class="form-group">
+                            <label for="evolutionWebhookUrl">Webhook Evolution API:</label>
+                            <input type="url" id="evolutionWebhookUrl" placeholder="https://seu-crm.com/webhook/evolution">
+                            <small>Recebe eventos do WhatsApp (mensagens, status, etc.)</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="n8nWebhookUrl">Webhook n8n:</label>
+                            <input type="url" id="n8nWebhookUrl" placeholder="https://seu-crm.com/webhook/n8n">
+                            <small>Recebe dados dos workflows n8n</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="paymentWebhookUrl">Webhook Pagamentos:</label>
+                            <input type="url" id="paymentWebhookUrl" placeholder="https://seu-crm.com/webhook/payments">
+                            <small>Recebe notificações de pagamentos (Stripe, PIX, etc.)</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="genericWebhookUrl">Webhook Genérico:</label>
+                            <input type="url" id="genericWebhookUrl" placeholder="https://seu-crm.com/webhook/generic">
+                            <small>Para outras integrações e eventos personalizados</small>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Salvar Webhooks
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Webhook Events Log -->
+                <div class="config-card" style="margin-top: 30px;">
+                    <h3><i class="fas fa-list"></i> Log de Eventos Webhook</h3>
+                    <div id="webhook-events" style="max-height: 400px; overflow-y: auto;">
+                        <p>Nenhum evento registrado ainda.</p>
+                    </div>
+                    <button onclick="loadWebhookEvents()" class="btn btn-secondary" style="margin-top: 15px;">
+                        <i class="fas fa-sync"></i> Atualizar Log
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Section -->
+        <div class="status-section">
+            <h3><i class="fas fa-chart-line"></i> Status das Integrações</h3>
+            <div class="status-grid">
+                <div class="status-card" id="evolution-status-card">
+                    <i class="fab fa-whatsapp"></i>
+                    <h4>Evolution API</h4>
+                    <span class="status-badge" id="evolution-badge">Não Configurado</span>
+                    <div class="status-details">
+                        <small id="evolution-details">Configure para conectar WhatsApp</small>
+                    </div>
+                </div>
+                <div class="status-card" id="n8n-status-card">
+                    <i class="fas fa-project-diagram"></i>
+                    <h4>n8n.cloud</h4>
+                    <span class="status-badge" id="n8n-badge">Não Configurado</span>
+                    <div class="status-details">
+                        <small id="n8n-details">Configure para automações</small>
+                    </div>
+                </div>
+                <div class="status-card" id="webhooks-status-card">
+                    <i class="fas fa-webhook"></i>
+                    <h4>Webhooks</h4>
+                    <span class="status-badge" id="webhooks-badge">Não Configurado</span>
+                    <div class="status-details">
+                        <small id="webhooks-details">Configure URLs de eventos</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="integrations_settings.js"></script>
+</body>
+</html>
