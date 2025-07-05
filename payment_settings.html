@@ -1,0 +1,148 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações de Pagamento</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="payment-settings-container">
+        <div class="header">
+            <h1>Configurações de Pagamento</h1>
+            <button onclick="window.history.back()" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </button>
+        </div>
+
+        <div class="payment-tabs">
+            <div class="tab-buttons">
+                <button class="tab-btn active" data-tab="pix">
+                    <i class="fas fa-qrcode"></i> PIX
+                </button>
+                <button class="tab-btn" data-tab="stripe">
+                    <i class="fab fa-stripe"></i> Stripe
+                </button>
+                <button class="tab-btn" data-tab="mercadopago">
+                    <i class="fas fa-dollar-sign"></i> Mercado Pago
+                </button>
+            </div>
+
+            <!-- PIX Configuration -->
+            <div class="tab-content active" id="pix-tab">
+                <div class="config-card">
+                    <h3><i class="fas fa-qrcode"></i> Configuração PIX</h3>
+                    <p>Configure sua chave PIX para gerar QR Codes automaticamente</p>
+                    
+                    <form id="pixForm">
+                        <div class="form-group">
+                            <label>Tipo da Chave PIX:</label>
+                            <select id="pixKeyType" required>
+                                <option value="email">E-mail</option>
+                                <option value="cpf">CPF</option>
+                                <option value="cnpj">CNPJ</option>
+                                <option value="phone">Telefone</option>
+                                <option value="random">Chave Aleatória</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Chave PIX:</label>
+                            <input type="text" id="pixKey" placeholder="sua.chave@email.com" required>
+                            <small>Digite sua chave PIX conforme o tipo selecionado</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Nome do Favorecido:</label>
+                            <input type="text" id="merchantName" placeholder="Seu Nome ou Empresa" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Cidade:</label>
+                            <input type="text" id="merchantCity" placeholder="Sua Cidade" required>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Salvar Configuração PIX
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Stripe Configuration -->
+            <div class="tab-content" id="stripe-tab">
+                <div class="config-card">
+                    <h3><i class="fab fa-stripe"></i> Configuração Stripe</h3>
+                    <p>Configure suas chaves do Stripe para pagamentos com cartão</p>
+                    
+                    <form id="stripeForm">
+                        <div class="form-group">
+                            <label>Chave Pública (Publishable Key):</label>
+                            <input type="text" id="stripePublicKey" placeholder="pk_test_..." required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Chave Secreta (Secret Key):</label>
+                            <input type="password" id="stripeSecretKey" placeholder="sk_test_..." required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Webhook Secret:</label>
+                            <input type="password" id="stripeWebhookSecret" placeholder="whsec_...">
+                            <small>Opcional: Para verificação de webhooks</small>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Salvar Configuração Stripe
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Mercado Pago Configuration -->
+            <div class="tab-content" id="mercadopago-tab">
+                <div class="config-card">
+                    <h3><i class="fas fa-dollar-sign"></i> Configuração Mercado Pago</h3>
+                    <p>Configure suas credenciais do Mercado Pago</p>
+                    
+                    <form id="mercadopagoForm">
+                        <div class="form-group">
+                            <label>Public Key:</label>
+                            <input type="text" id="mpPublicKey" placeholder="APP_USR-..." required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Access Token:</label>
+                            <input type="password" id="mpAccessToken" placeholder="APP_USR-..." required>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Salvar Configuração Mercado Pago
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Section -->
+        <div class="test-section">
+            <h3>Testar Configurações</h3>
+            <div class="test-buttons">
+                <button class="btn btn-secondary" onclick="testPixPayment()">
+                    <i class="fas fa-qrcode"></i> Testar PIX
+                </button>
+                <button class="btn btn-secondary" onclick="testStripePayment()">
+                    <i class="fab fa-stripe"></i> Testar Stripe
+                </button>
+                <button class="btn btn-secondary" onclick="testMercadoPagoPayment()">
+                    <i class="fas fa-dollar-sign"></i> Testar Mercado Pago
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="payment_settings.js"></script>
+</body>
+</html>

@@ -1,4 +1,3 @@
-
 // Sistema CRM Simples em JavaScript Puro
 class CRMSystem {
     constructor() {
@@ -309,6 +308,7 @@ class CRMSystem {
                 <td>
                     <button class="btn btn-secondary" onclick="crm.viewPayment(${payment.id})">Ver</button>
                     ${payment.status === 'pending' ? '<button class="btn btn-primary" onclick="crm.processPayment(' + payment.id + ')">Processar</button>' : ''}
+                    <button class="btn btn-primary" onclick="crm.createNewPayment()">Novo PIX</button>
                 </td>
             `;
             tbody.appendChild(row);
@@ -463,6 +463,198 @@ class CRMSystem {
             this.showNotification('Pagamento processado com sucesso!', 'success');
         }
     }
+
+    createNewPayment() {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'block';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close" onclick="this.closest('.modal').remove()">&times;</span>
+                <h2>Criar Pagamento</h2>
+                <form id="newPaymentForm">
+                    <div class="form-group">
+                        <label>Valor (R$):</label>
+                        <input type="number" id="paymentAmount" step="0.01" min="0.01" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Descrição:</label>
+                        <input type="text" id="paymentDescription" placeholder="Descrição do pagamento">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Método de Pagamento:</label>
+                        <select id="paymentMethod" required>
+                            <option value="pix">PIX</option>
+                            <option value="stripe">Stripe (Cartão)</option>
+                            <option value="mercadopago">Mercado Pago</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit">Gerar Pagamento</button>
+                </form>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        document.getElementById('newPaymentForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.generatePayment(modal);
+        });
+    }
+
+    async generatePayment(modal) {
+        const amount = parseFloat(document.getElementById('paymentAmount').value);
+        const description = document.getElementById('paymentDescription').value;
+        const method = document.getElementById('paymentMethod').value;
+        
+        try {
+            let endpoint = '';
+            switch(method) {
+                case 'pix':
+                    endpoint = 'payment_processor.php?action=create_pix';
+                    break;
+                case 'stripe':
+                    endpoint = 'payment_processor.php?action=create_stripe';
+                    break;
+                case 'mercadopago':
+                    endpoint = 'payment_processor.php?action=create_mercadopago';
+                    break;
+            }
+            
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: amount,
+                    description: description,
+                    customer_id: null
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                modal.remove();
+                
+                if (method === 'pix') {
+                    this.showPixPayment(result);
+                } else {
+                    this.showNotification('Pagamento criado com sucesso!', 'success');
+                    if (result.checkout_url) {
+                        window.open(result.checkout_url, '_blank');
+                    }
+                }
+                
+                // Add to local payments array
+                this.payments.unshift({
+                    id: result.payment_id || Date.now(),
+                    customerName: 'Cliente Direto',
+                    amount: amount,
+                    status: 'pending',
+                    date: new Date(),
+                    method: method.toUpperCase(),
+                    transactionId: result.transaction_id
+                });
+                
+                this.renderPayments();
+                this.updateStats();
+            } else {
+                throw new Error(result.error || 'Erro ao criar pagamento');
+            }
+            
+        } catch (error) {
+            this.showNotification('Erro ao gerar pagamento: ' + error.message, 'error');
+        }
+    }
+
+    showPixPayment(result) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'block';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 500px;">
+                <span class="close" onclick="this.closest('.modal').remove()">&times;</span>
+                <h2><i class="fas fa-qrcode"></i> Pagamento PIX</h2>
+                <div style="text-align: center;">
+                    <p><strong>Valor: R$ ${result.amount.toFixed(2)}</strong></p>
+                    <p>ID: ${result.transaction_id}</p>
+                    
+                    <div style="margin: 20px 0;">
+                        <img src="${result.qr_code_url}" alt="QR Code PIX" style="max-width: 250px; border: 1px solid #ddd; border-radius: 10px;">
+                    </div>
+                    
+                    <div style="margin: 20px 0;">
+                        <label style="display: block; margin-bottom: 10px; font-weight: bold;">Código PIX (Copia e Cola):</label>
+                        <textarea readonly style="width: 100%; height: 120px; font-family: monospace; font-size: 12px; padding: 10px; border: 2px solid #ddd; border-radius: 5px;">${result.pix_code}</textarea>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <button onclick="copyPixCode('${result.pix_code}')" class="btn btn-primary">
+                            <i class="fas fa-copy"></i> Copiar Código
+                        </button>
+                        <button onclick="checkPixPayment('${result.transaction_id}')" class="btn btn-secondary">
+                            <i class="fas fa-sync"></i> Verificar Pagamento
+                        </button>
+                        <button onclick="this.closest('.modal').remove()" class="btn btn-secondary">
+                            Fechar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+}
+
+// Global functions for payment features
+function copyPixCode(code) {
+    navigator.clipboard.writeText(code).then(() => {
+        crm.showNotification('Código PIX copiado para a área de transferência!', 'success');
+    }).catch(() => {
+        // Fallback para navegadores antigos
+        const textArea = document.createElement('textarea');
+        textArea.value = code;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        crm.showNotification('Código PIX copiado!', 'success');
+    });
+}
+
+async function checkPixPayment(transactionId) {
+    try {
+        const response = await fetch('payment_processor.php?action=verify_payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ transaction_id: transactionId })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            if (result.status === 'paid') {
+                crm.showNotification('✅ ' + result.message, 'success');
+                // Atualizar a lista de pagamentos
+                crm.renderPayments();
+                crm.updateStats();
+            } else {
+                crm.showNotification('Pagamento ainda pendente', 'info');
+            }
+        } else {
+            crm.showNotification('Erro ao verificar pagamento: ' + result.error, 'error');
+        }
+    } catch (error) {
+        crm.showNotification('Erro ao verificar pagamento: ' + error.message, 'error');
+    }
+}
+
+function openPaymentSettings() {
+    window.open('payment_settings.html', '_blank');
 }
 
 // Global functions for HTML onclick events

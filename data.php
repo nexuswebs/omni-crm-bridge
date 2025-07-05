@@ -1,4 +1,3 @@
-
 <?php
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -80,7 +79,7 @@ function createTables($pdo) {
         FOREIGN KEY (user_id) REFERENCES users (id)
     )");
     
-    // Tabela de pagamentos
+    // Tabela de pagamentos atualizada
     $pdo->exec("CREATE TABLE IF NOT EXISTS payments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -89,7 +88,10 @@ function createTables($pdo) {
         status TEXT DEFAULT 'pending',
         method TEXT,
         description TEXT,
+        pix_code TEXT,
+        transaction_id TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users (id),
         FOREIGN KEY (customer_id) REFERENCES customers (id)
     )");

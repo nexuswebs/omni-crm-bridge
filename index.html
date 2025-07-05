@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -6,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRM Inteligente</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="payment_styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -181,9 +181,14 @@
                 <div id="paymentsContent" class="page-content">
                     <div class="page-header">
                         <h2>Pagamentos</h2>
-                        <button class="btn btn-primary" onclick="openPaymentModal()">
-                            <i class="fas fa-plus"></i> Novo Pagamento
-                        </button>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-secondary" onclick="openPaymentSettings()">
+                                <i class="fas fa-cog"></i> Configurar Pagamentos
+                            </button>
+                            <button class="btn btn-primary" onclick="crm.createNewPayment()">
+                                <i class="fas fa-plus"></i> Novo Pagamento
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="table-container">
