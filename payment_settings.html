@@ -4,29 +4,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configurações de Pagamento</title>
+    <title>Configurações de Pagamento - CRM Inteligente</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="payment_styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="payment-settings-container">
         <div class="header">
-            <h1>Configurações de Pagamento</h1>
+            <h1><i class="fas fa-credit-card"></i> Configurações de Pagamento</h1>
             <button onclick="window.history.back()" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Voltar
+                <i class="fas fa-arrow-left"></i> Voltar ao Sistema
             </button>
         </div>
 
         <div class="payment-tabs">
             <div class="tab-buttons">
                 <button class="tab-btn active" data-tab="pix">
-                    <i class="fas fa-qrcode"></i> PIX
+                    <i class="fas fa-qrcode"></i> 
+                    <span>PIX</span>
+                    <div class="status-indicator" id="pix-status"></div>
                 </button>
                 <button class="tab-btn" data-tab="stripe">
-                    <i class="fab fa-stripe"></i> Stripe
+                    <i class="fab fa-stripe"></i> 
+                    <span>Stripe</span>
+                    <div class="status-indicator" id="stripe-status"></div>
                 </button>
                 <button class="tab-btn" data-tab="mercadopago">
-                    <i class="fas fa-dollar-sign"></i> Mercado Pago
+                    <i class="fas fa-dollar-sign"></i> 
+                    <span>Mercado Pago</span>
+                    <div class="status-indicator" id="mp-status"></div>
                 </button>
             </div>
 
@@ -34,12 +41,13 @@
             <div class="tab-content active" id="pix-tab">
                 <div class="config-card">
                     <h3><i class="fas fa-qrcode"></i> Configuração PIX</h3>
-                    <p>Configure sua chave PIX para gerar QR Codes automaticamente</p>
+                    <p>Configure sua chave PIX para gerar QR Codes e códigos automaticamente</p>
                     
                     <form id="pixForm">
                         <div class="form-group">
-                            <label>Tipo da Chave PIX:</label>
+                            <label for="pixKeyType">Tipo da Chave PIX:</label>
                             <select id="pixKeyType" required>
+                                <option value="">Selecione o tipo</option>
                                 <option value="email">E-mail</option>
                                 <option value="cpf">CPF</option>
                                 <option value="cnpj">CNPJ</option>
@@ -49,19 +57,21 @@
                         </div>
                         
                         <div class="form-group">
-                            <label>Chave PIX:</label>
-                            <input type="text" id="pixKey" placeholder="sua.chave@email.com" required>
-                            <small>Digite sua chave PIX conforme o tipo selecionado</small>
+                            <label for="pixKey">Chave PIX:</label>
+                            <input type="text" id="pixKey" placeholder="Digite sua chave PIX" required>
+                            <small>Digite sua chave PIX conforme o tipo selecionado acima</small>
                         </div>
                         
                         <div class="form-group">
-                            <label>Nome do Favorecido:</label>
-                            <input type="text" id="merchantName" placeholder="Seu Nome ou Empresa" required>
+                            <label for="merchantName">Nome do Favorecido:</label>
+                            <input type="text" id="merchantName" placeholder="Seu Nome ou Nome da Empresa" required>
+                            <small>Nome que aparecerá no comprovante do PIX</small>
                         </div>
                         
                         <div class="form-group">
-                            <label>Cidade:</label>
+                            <label for="merchantCity">Cidade:</label>
                             <input type="text" id="merchantCity" placeholder="Sua Cidade" required>
+                            <small>Cidade que aparecerá no comprovante do PIX</small>
                         </div>
                         
                         <button type="submit" class="btn btn-primary">
@@ -75,23 +85,38 @@
             <div class="tab-content" id="stripe-tab">
                 <div class="config-card">
                     <h3><i class="fab fa-stripe"></i> Configuração Stripe</h3>
-                    <p>Configure suas chaves do Stripe para pagamentos com cartão</p>
+                    <p>Configure suas chaves do Stripe para pagamentos internacionais com cartão</p>
+                    
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Como obter as chaves:</strong>
+                            <ol>
+                                <li>Acesse o <a href="https://dashboard.stripe.com" target="_blank">Stripe Dashboard</a></li>
+                                <li>Vá em "Developers" → "API keys"</li>
+                                <li>Copie sua Publishable key e Secret key</li>
+                                <li>Para webhooks, vá em "Webhooks" e crie um endpoint</li>
+                            </ol>
+                        </div>
+                    </div>
                     
                     <form id="stripeForm">
                         <div class="form-group">
-                            <label>Chave Pública (Publishable Key):</label>
+                            <label for="stripePublicKey">Chave Pública (Publishable Key):</label>
                             <input type="text" id="stripePublicKey" placeholder="pk_test_..." required>
+                            <small>Chave pública do Stripe (pode ser compartilhada)</small>
                         </div>
                         
                         <div class="form-group">
-                            <label>Chave Secreta (Secret Key):</label>
+                            <label for="stripeSecretKey">Chave Secreta (Secret Key):</label>
                             <input type="password" id="stripeSecretKey" placeholder="sk_test_..." required>
+                            <small>Chave secreta do Stripe (mantenha em segurança)</small>
                         </div>
                         
                         <div class="form-group">
-                            <label>Webhook Secret:</label>
+                            <label for="stripeWebhookSecret">Webhook Secret:</label>
                             <input type="password" id="stripeWebhookSecret" placeholder="whsec_...">
-                            <small>Opcional: Para verificação de webhooks</small>
+                            <small>Opcional: Para verificação automática de pagamentos</small>
                         </div>
                         
                         <button type="submit" class="btn btn-primary">
@@ -105,17 +130,41 @@
             <div class="tab-content" id="mercadopago-tab">
                 <div class="config-card">
                     <h3><i class="fas fa-dollar-sign"></i> Configuração Mercado Pago</h3>
-                    <p>Configure suas credenciais do Mercado Pago</p>
+                    <p>Configure suas credenciais do Mercado Pago para América Latina</p>
+                    
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Como obter as credenciais:</strong>
+                            <ol>
+                                <li>Acesse o <a href="https://www.mercadopago.com.br/developers" target="_blank">Mercado Pago Developers</a></li>
+                                <li>Vá em "Suas integrações" → "Criar aplicação"</li>
+                                <li>Configure sua aplicação e obtenha as credenciais</li>
+                                <li>Use as credenciais de teste primeiro, depois as de produção</li>
+                            </ol>
+                        </div>
+                    </div>
                     
                     <form id="mercadopagoForm">
                         <div class="form-group">
-                            <label>Public Key:</label>
+                            <label for="mpPublicKey">Public Key:</label>
                             <input type="text" id="mpPublicKey" placeholder="APP_USR-..." required>
+                            <small>Chave pública do Mercado Pago</small>
                         </div>
                         
                         <div class="form-group">
-                            <label>Access Token:</label>
+                            <label for="mpAccessToken">Access Token:</label>
                             <input type="password" id="mpAccessToken" placeholder="APP_USR-..." required>
+                            <small>Token de acesso do Mercado Pago (mantenha em segurança)</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="mpEnvironment">Ambiente:</label>
+                            <select id="mpEnvironment">
+                                <option value="sandbox">Teste (Sandbox)</option>
+                                <option value="production">Produção</option>
+                            </select>
+                            <small>Use "Teste" para desenvolvimento e "Produção" para vendas reais</small>
                         </div>
                         
                         <button type="submit" class="btn btn-primary">
@@ -128,7 +177,8 @@
 
         <!-- Test Section -->
         <div class="test-section">
-            <h3>Testar Configurações</h3>
+            <h3><i class="fas fa-flask"></i> Testar Configurações</h3>
+            <p>Teste suas configurações de pagamento antes de usar em produção</p>
             <div class="test-buttons">
                 <button class="btn btn-secondary" onclick="testPixPayment()">
                     <i class="fas fa-qrcode"></i> Testar PIX
@@ -139,6 +189,28 @@
                 <button class="btn btn-secondary" onclick="testMercadoPagoPayment()">
                     <i class="fas fa-dollar-sign"></i> Testar Mercado Pago
                 </button>
+            </div>
+        </div>
+
+        <!-- Configuration Status -->
+        <div class="status-section">
+            <h3><i class="fas fa-chart-line"></i> Status das Configurações</h3>
+            <div class="status-grid">
+                <div class="status-card" id="pix-status-card">
+                    <i class="fas fa-qrcode"></i>
+                    <h4>PIX</h4>
+                    <span class="status-badge" id="pix-badge">Não Configurado</span>
+                </div>
+                <div class="status-card" id="stripe-status-card">
+                    <i class="fab fa-stripe"></i>
+                    <h4>Stripe</h4>
+                    <span class="status-badge" id="stripe-badge">Não Configurado</span>
+                </div>
+                <div class="status-card" id="mp-status-card">
+                    <i class="fas fa-dollar-sign"></i>
+                    <h4>Mercado Pago</h4>
+                    <span class="status-badge" id="mp-badge">Não Configurado</span>
+                </div>
             </div>
         </div>
     </div>
