@@ -1,146 +1,285 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { 
+  Users, 
+  MessageSquare, 
+  CreditCard, 
+  Zap, 
+  TrendingUp, 
+  Activity,
+  Bot,
+  Settings,
+  CheckCircle,
+  XCircle,
+  Clock
+} from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
-const Dashboard = () => {
-  const stats = [
-    {
-      title: 'Clientes Ativos',
-      value: '1,247',
-      change: '+12%',
-      trend: 'up',
-      icon: '👥'
-    },
-    {
-      title: 'Workflows Rodando',
-      value: '23',
-      change: '+5',
-      trend: 'up',
-      icon: '⚡'
-    },
-    {
-      title: 'Mensagens Hoje',
-      value: '856',
-      change: '+18%',
-      trend: 'up',
-      icon: '💬'
-    },
-    {
-      title: 'Revenue Mensal',
-      value: 'R$ 45.2k',
-      change: '+22%',
-      trend: 'up',
-      icon: '💰'
-    }
-  ];
+interface DashboardStats {
+  totalCustomers: number;
+  todayMessages: number;
+  activeWorkflows: number;
+  totalRevenue: number;
+  connectedInstances: number;
+  activePaymentMethods: number;
+}
 
-  const recentActivities = [
+interface IntegrationStatus {
+  evolution: 'connected' | 'disconnected' | 'pending';
+  n8n: 'connected' | 'disconnected' | 'pending';
+  payments: 'configured' | 'not_configured' | 'partial';
+}
+
+export default function Dashboard() {
+  const { user } = useAuth();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalCustomers: 0,
+    todayMessages: 0,
+    activeWorkflows: 0,
+    totalRevenue: 0,
+    connectedInstances: 0,
+    activePaymentMethods: 0
+  });
+
+  const [integrationStatus, setIntegrationStatus] = useState<IntegrationStatus>({
+    evolution: 'disconnected',
+    n8n: 'disconnected',
+    payments: 'not_configured'
+  });
+
+  const [recentActivity, setRecentActivity] = useState([
     {
       id: 1,
       type: 'customer',
       message: 'Novo cliente cadastrado: João Silva',
       time: '2 min atrás',
-      status: 'success'
+      icon: Users
     },
     {
       id: 2,
-      type: 'workflow',
-      message: 'Workflow "Boas-vindas" executado com sucesso',
+      type: 'message',
+      message: 'Mensagem recebida via WhatsApp',
       time: '5 min atrás',
-      status: 'success'
+      icon: MessageSquare
     },
     {
       id: 3,
       type: 'payment',
-      message: 'Pagamento PIX recebido - R$ 299,00',
-      time: '8 min atrás',
-      status: 'success'
+      message: 'Pagamento PIX recebido: R$ 299,90',
+      time: '10 min atrás',
+      icon: CreditCard
     },
     {
       id: 4,
-      type: 'agent',
-      message: 'Agente IA respondeu 15 tickets automaticamente',
-      time: '12 min atrás',
-      status: 'info'
+      type: 'workflow',
+      message: 'Workflow "Onboarding" executado',
+      time: '15 min atrás',
+      icon: Zap
     }
-  ];
+  ]);
 
-  const activeWorkflows = [
-    {
-      id: 1,
-      name: 'Onboarding Automático',
-      status: 'running',
-      executions: 156,
-      success_rate: 98.5
-    },
-    {
-      id: 2,
-      name: 'Suporte Inteligente',
-      status: 'running',
-      executions: 89,
-      success_rate: 94.2
-    },
-    {
-      id: 3,
-      name: 'Follow-up Vendas',
-      status: 'paused',
-      executions: 234,
-      success_rate: 91.8
+  useEffect(() => {
+    loadDashboardData();
+    checkIntegrationStatus();
+  }, []);
+
+  const loadDashboardData = async () => {
+    // Simular carregamento de dados
+    setTimeout(() => {
+      setStats({
+        totalCustomers: 127,
+        todayMessages: 45,
+        activeWorkflows: 8,
+        totalRevenue: 15420.50,
+        connectedInstances: 2,
+        activePaymentMethods: 3
+      });
+    }, 1000);
+  };
+
+  const checkIntegrationStatus = async () => {
+    // Verificar status das integrações
+    setTimeout(() => {
+      setIntegrationStatus({
+        evolution: 'connected',
+        n8n: 'pending',
+        payments: 'configured'
+      });
+    }, 1500);
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'connected':
+      case 'configured':
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'pending':
+      case 'partial':
+        return <Clock className="w-4 h-4 text-yellow-500" />;
+      default:
+        return <XCircle className="w-4 h-4 text-red-500" />;
     }
-  ];
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'connected':
+        return 'Conectado';
+      case 'configured':
+        return 'Configurado';
+      case 'pending':
+        return 'Pendente';
+      case 'partial':
+        return 'Parcial';
+      default:
+        return 'Desconectado';
+    }
+  };
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">Visão geral do seu CRM inteligente</p>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Bem-vindo de volta, {user?.name}! Aqui está um resumo do seu CRM.
+          </p>
         </div>
-        <Button className="bg-gradient-primary text-white">
-          Novo Workflow
+        <Button>
+          <Settings className="w-4 h-4 mr-2" />
+          Configurações
         </Button>
       </div>
 
-      {/* Stats Cards */}
+      {/* Status das Integrações */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="w-5 h-5" />
+            Status das Integrações
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <MessageSquare className="w-8 h-8 text-green-600" />
+                <div>
+                  <p className="font-medium">Evolution API</p>
+                  <p className="text-sm text-muted-foreground">WhatsApp Business</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {getStatusIcon(integrationStatus.evolution)}
+                <span className="text-sm">{getStatusText(integrationStatus.evolution)}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <Bot className="w-8 h-8 text-purple-600" />
+                <div>
+                  <p className="font-medium">n8n.cloud</p>
+                  <p className="text-sm text-muted-foreground">Automações</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {getStatusIcon(integrationStatus.n8n)}
+                <span className="text-sm">{getStatusText(integrationStatus.n8n)}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <CreditCard className="w-8 h-8 text-blue-600" />
+                <div>
+                  <p className="font-medium">Pagamentos</p>
+                  <p className="text-sm text-muted-foreground">PIX, Stripe, Mercado Pago</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {getStatusIcon(integrationStatus.payments)}
+                <span className="text-sm">{getStatusText(integrationStatus.payments)}</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <Card key={index} className="relative overflow-hidden border-0 bg-card/50 backdrop-blur-sm">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-primary opacity-10 rounded-bl-full" />
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
-              <span className="text-2xl">{stat.icon}</span>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-              <p className="text-xs text-green-600 flex items-center gap-1">
-                <span>↗</span> {stat.change} do mês passado
-              </p>
-            </CardContent>
-          </Card>
-        ))}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Clientes</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalCustomers}</div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-green-600">+12%</span> em relação ao mês passado
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Mensagens Hoje</CardTitle>
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.todayMessages}</div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-green-600">+8%</span> em relação a ontem
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Workflows Ativos</CardTitle>
+            <Zap className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.activeWorkflows}</div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-blue-600">2 novos</span> esta semana
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              R$ {stats.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-green-600">+15%</span> em relação ao mês passado
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
+      {/* Atividade Recente */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Activities */}
-        <Card className="border-0 bg-card/50 backdrop-blur-sm">
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              📈 Atividades Recentes
-            </CardTitle>
-            <CardDescription>
-              Últimas ações no sistema
-            </CardDescription>
+            <CardTitle>Atividade Recente</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                  <div className={`w-2 h-2 rounded-full ${
-                    activity.status === 'success' ? 'bg-green-500' : 'bg-blue-500'
-                  }`} />
+              {recentActivity.map((activity) => (
+                <div key={activity.id} className="flex items-center gap-3">
+                  <div className="p-2 bg-muted rounded-full">
+                    <activity.icon className="w-4 h-4" />
+                  </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium">{activity.message}</p>
                     <p className="text-xs text-muted-foreground">{activity.time}</p>
@@ -151,44 +290,32 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Active Workflows */}
-        <Card className="border-0 bg-card/50 backdrop-blur-sm">
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              ⚡ Workflows Ativos
-            </CardTitle>
-            <CardDescription>
-              Status dos workflows n8n
-            </CardDescription>
+            <CardTitle>Ações Rápidas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {activeWorkflows.map((workflow) => (
-                <div key={workflow.id} className="p-4 rounded-lg border border-border bg-background/50">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium">{workflow.name}</h4>
-                    <Badge variant={workflow.status === 'running' ? 'default' : 'secondary'}>
-                      {workflow.status === 'running' ? 'Rodando' : 'Pausado'}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Execuções:</span>
-                      <span className="ml-2 font-medium">{workflow.executions}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Taxa de Sucesso:</span>
-                      <span className="ml-2 font-medium text-green-600">{workflow.success_rate}%</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="space-y-3">
+              <Button className="w-full justify-start" variant="outline">
+                <Users className="w-4 h-4 mr-2" />
+                Adicionar Novo Cliente
+              </Button>
+              <Button className="w-full justify-start" variant="outline">
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Enviar Mensagem WhatsApp
+              </Button>
+              <Button className="w-full justify-start" variant="outline">
+                <CreditCard className="w-4 h-4 mr-2" />
+                Criar Link de Pagamento
+              </Button>
+              <Button className="w-full justify-start" variant="outline">
+                <Zap className="w-4 h-4 mr-2" />
+                Executar Workflow
+              </Button>
             </div>
           </CardContent>
         </Card>
       </div>
     </div>
   );
-};
-
-export default Dashboard;
+}
