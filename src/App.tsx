@@ -48,23 +48,21 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <SidebarProvider>
-                      <Layout>
-                        <Routes>
-                          <Route path="/dashboard" element={<Dashboard />} />
-                          <Route path="/customers" element={<Customers />} />
-                          <Route path="/whatsapp" element={<WhatsApp />} />
-                          <Route path="/workflows" element={<Workflows />} />
-                          <Route path="/agents" element={<Agents />} />
-                          <Route path="/payments" element={<Payments />} />
-                          <Route path="/reports" element={<Reports />} />
-                          <Route path="/settings" element={<Settings />} />
-                          <Route path="*" element={<NotFound />} />
-                        </Routes>
-                      </Layout>
+                      <Layout />
                     </SidebarProvider>
                   </ProtectedRoute>
                 }
-              />
+              >
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="customers" element={<Customers />} />
+                <Route path="whatsapp" element={<WhatsApp />} />
+                <Route path="workflows" element={<Workflows />} />
+                <Route path="agents" element={<Agents />} />
+                <Route path="payments" element={<Payments />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
             </Routes>
           </ThemeProvider>
         </AuthProvider>
