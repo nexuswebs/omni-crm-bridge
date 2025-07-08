@@ -43,26 +43,89 @@ function App() {
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/admin-verify" element={<AdminVerify />} />
-              <Route
-                path="/*"
-                element={
-                  <ProtectedRoute>
-                    <SidebarProvider>
-                      <Layout />
-                    </SidebarProvider>
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="customers" element={<Customers />} />
-                <Route path="whatsapp" element={<WhatsApp />} />
-                <Route path="workflows" element={<Workflows />} />
-                <Route path="agents" element={<Agents />} />
-                <Route path="payments" element={<Payments />} />
-                <Route path="reports" element={<Reports />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="*" element={<NotFound />} />
-              </Route>
+              
+              {/* Protected routes with layout */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  </SidebarProvider>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/customers" element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <Layout>
+                      <Customers />
+                    </Layout>
+                  </SidebarProvider>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/whatsapp" element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <Layout>
+                      <WhatsApp />
+                    </Layout>
+                  </SidebarProvider>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/workflows" element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <Layout>
+                      <Workflows />
+                    </Layout>
+                  </SidebarProvider>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/agents" element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <Layout>
+                      <Agents />
+                    </Layout>
+                  </SidebarProvider>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/payments" element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <Layout>
+                      <Payments />
+                    </Layout>
+                  </SidebarProvider>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/reports" element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <Layout>
+                      <Reports />
+                    </Layout>
+                  </SidebarProvider>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <Layout>
+                      <Settings />
+                    </Layout>
+                  </SidebarProvider>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </ThemeProvider>
         </AuthProvider>
